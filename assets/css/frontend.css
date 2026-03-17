@@ -6,3 +6,6 @@
 .s3ds-hint{position:absolute;left:16px;bottom:16px;z-index:5;padding:8px 12px;border-radius:999px;background:rgba(219,219,219,.92);font-size:12px}
 .s3ds-brand{position:absolute;left:16px;top:16px;z-index:5;padding:6px 10px;border-radius:6px;background:rgba(255,255,255,.7);font-size:12px;font-weight:600}
 .s3ds-no-model{padding:16px;border:1px solid #ddd}
+
+.s3ds-viewer-message{position:absolute;inset:auto 16px 16px 16px;z-index:6;padding:12px;border-radius:10px;background:rgba(0,0,0,.78);color:#fff;font-size:14px}
+.s3ds-viewer.is-error .s3ds-controls,.s3ds-viewer.is-error .s3ds-hint{display:none}

@@ -40,4 +40,33 @@ class Helpers {
 	public static function get_settings() {
 		return wp_parse_args( get_option( S3DS_OPTION_KEY, array() ), self::default_settings() );
 	}
+
+	public static function normalize_media_url( $value ) {
+		$value = trim( html_entity_decode( (string) $value, ENT_QUOTES, 'UTF-8' ) );
+
+		if ( '' === $value ) {
+			return '';
+		}
+
+		if ( 0 === strpos( $value, '//' ) ) {
+			$value = ( is_ssl() ? 'https:' : 'http:' ) . $value;
+		}
+
+		if ( 0 === strpos( $value, '/' ) ) {
+			$value = home_url( $value );
+		} elseif ( ! preg_match( '#^[a-z][a-z0-9+.-]*://#i', $value ) ) {
+			$value = home_url( '/' . ltrim( $value, '/' ) );
+		}
+
+		return esc_url_raw( $value, array( 'http', 'https' ) );
+	}
+
+	public static function is_supported_model_url( $url ) {
+		$path = wp_parse_url( (string) $url, PHP_URL_PATH );
+		if ( ! is_string( $path ) || '' === $path ) {
+			return false;
+		}
+
+		return (bool) preg_match( '/\.(glb|gltf)$/i', $path );
+	}
 }
