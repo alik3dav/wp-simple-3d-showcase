@@ -26,14 +26,20 @@ class AssetLoader {
 
 	public function enqueue_frontend_assets() {
 		$settings = \S3DS\Helpers::get_settings();
+		$model_viewer_url = 'https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js';
+
+		if ( 'local' === $settings['model_viewer_source'] ) {
+			$local_model_viewer_path = S3DS_PLUGIN_PATH . 'assets/vendor/model-viewer.min.js';
+			if ( file_exists( $local_model_viewer_path ) ) {
+				$model_viewer_url = S3DS_PLUGIN_URL . 'assets/vendor/model-viewer.min.js';
+			}
+		}
+
+		wp_enqueue_script( 'model-viewer', $model_viewer_url, array(), S3DS_VERSION, array( 'strategy' => 'defer', 'in_footer' => false ) );
+		wp_script_add_data( 'model-viewer', 'type', 'module' );
 
 		wp_enqueue_style( 's3ds-frontend', S3DS_PLUGIN_URL . 'assets/css/frontend.css', array(), S3DS_VERSION );
 		wp_enqueue_script( 's3ds-frontend', S3DS_PLUGIN_URL . 'assets/js/frontend.js', array(), S3DS_VERSION, true );
-
-		if ( 'cdn' === $settings['model_viewer_source'] ) {
-			wp_enqueue_script( 'model-viewer', 'https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js', array(), S3DS_VERSION, array( 'strategy' => 'defer', 'in_footer' => false ) );
-			wp_script_add_data( 'model-viewer', 'type', 'module' );
-		}
 
 		wp_localize_script(
 			's3ds-frontend',
