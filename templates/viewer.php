@@ -2,12 +2,14 @@
 /** @var array $config */
 /** @var string $instance_id */
 ?>
-<div id="<?php echo esc_attr( $instance_id ); ?>" class="s3ds-viewer" style="--s3ds-height: <?php echo esc_attr( $config['height'] ); ?>; --s3ds-bg: <?php echo esc_attr( $config['background'] ); ?>;">
+<div id="<?php echo esc_attr( $instance_id ); ?>" class="s3ds-viewer" data-load-error-type="<?php echo esc_attr( $config['load_error_type'] ); ?>" style="--s3ds-height: <?php echo esc_attr( $config['height'] ); ?>; --s3ds-bg: <?php echo esc_attr( $config['background'] ); ?>;">
 	<div class="s3ds-brand"><?php echo esc_html( $config['brand_label'] ); ?></div>
 	<model-viewer
 		id="<?php echo esc_attr( $instance_id ); ?>-model"
-		src="<?php echo esc_url( $config['model_url'] ); ?>"
+		<?php if ( empty( $config['load_error_type'] ) ) : ?>src="<?php echo esc_url( $config['model_url'] ); ?>"<?php endif; ?>
 		<?php if ( ! empty( $config['poster_url'] ) ) : ?>poster="<?php echo esc_url( $config['poster_url'] ); ?>"<?php endif; ?>
+		data-model-url="<?php echo esc_attr( $config['model_url'] ); ?>"
+		data-load-error-type="<?php echo esc_attr( $config['load_error_type'] ); ?>"
 		alt="<?php esc_attr_e( '3D model viewer', 'simple-3d-showcase' ); ?>"
 		loading="<?php echo esc_attr( $config['loading'] ); ?>"
 		reveal="auto"
@@ -22,6 +24,8 @@
 		<?php if ( ! empty( $config['auto_rotate'] ) ) : ?>auto-rotate<?php endif; ?>
 		<?php if ( ! empty( $config['camera_controls'] ) ) : ?>camera-controls<?php endif; ?>
 	></model-viewer>
+
+	<div class="s3ds-viewer-message" role="status" aria-live="polite" hidden><?php echo esc_html( $config['load_error_message'] ); ?></div>
 
 	<?php if ( ! empty( $config['touch_hint_enabled'] ) ) : ?>
 		<div class="s3ds-hint"><?php echo esc_html( $config['hint_text'] ); ?></div>

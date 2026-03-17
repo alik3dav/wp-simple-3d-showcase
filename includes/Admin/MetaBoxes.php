@@ -51,8 +51,8 @@ class MetaBoxes {
 		$input = isset( $_POST['s3ds'] ) ? (array) wp_unslash( $_POST['s3ds'] ) : array();
 
 		$clean = array(
-			'model_url'        => esc_url_raw( $input['model_url'] ?? '' ),
-			'poster_url'       => esc_url_raw( $input['poster_url'] ?? '' ),
+			'model_url'        => Helpers::normalize_media_url( $input['model_url'] ?? '' ),
+			'poster_url'       => Helpers::normalize_media_url( $input['poster_url'] ?? '' ),
 			'height'           => Helpers::sanitize_dimension( $input['height'] ?? '', '' ),
 			'background'       => sanitize_hex_color( $input['background'] ?? '' ) ?: '',
 			'auto_rotate'      => isset( $input['auto_rotate'] ) ? (string) Helpers::bool_attr( $input['auto_rotate'] ) : '',

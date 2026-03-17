@@ -83,13 +83,17 @@ class Shortcode {
 		$config['background']      = sanitize_hex_color( $config['background'] ) ?: $defaults['background'];
 		$config['auto_rotate']     = Helpers::bool_attr( $config['auto_rotate'] );
 		$config['camera_controls'] = Helpers::bool_attr( $config['camera_controls'] );
-		$config['model_url']       = esc_url_raw( $config['model_url'] );
-		$config['poster_url']      = esc_url_raw( $config['poster_url'] );
+		$config['model_url']       = Helpers::normalize_media_url( $config['model_url'] );
+		$config['poster_url']      = Helpers::normalize_media_url( $config['poster_url'] );
 		$config['loading']         = in_array( $config['loading'], array( 'eager', 'lazy', 'auto' ), true ) ? $config['loading'] : 'eager';
 
+		$config['load_error_type']    = '';
+		$config['load_error_message'] = __( 'This 3D model is currently unavailable.', 'simple-3d-showcase' );
+
 		if ( empty( $config['model_url'] ) ) {
-			$this->asset_loader->mark_frontend_needed();
-			return '<div class="s3ds-no-model">' . esc_html__( 'This 3D model is currently unavailable.', 'simple-3d-showcase' ) . '</div>';
+			$config['load_error_type'] = 'missing_url';
+		} elseif ( ! Helpers::is_supported_model_url( $config['model_url'] ) ) {
+			$config['load_error_type'] = 'invalid_file';
 		}
 
 		return $this->renderer->render( $config );
