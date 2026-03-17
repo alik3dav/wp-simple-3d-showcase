@@ -58,7 +58,16 @@ class Helpers {
 			$value = home_url( '/' . ltrim( $value, '/' ) );
 		}
 
-		return esc_url_raw( $value, array( 'http', 'https' ) );
+		$url = esc_url_raw( $value, array( 'http', 'https' ) );
+		
+		// Convert to protocol-relative URL to avoid mixed content issues
+		if ( 0 === strpos( $url, 'http://' ) ) {
+			$url = str_replace( 'http://', '//', $url );
+		} elseif ( 0 === strpos( $url, 'https://' ) ) {
+			$url = str_replace( 'https://', '//', $url );
+		}
+		
+		return $url;
 	}
 
 	public static function is_supported_model_url( $url ) {
