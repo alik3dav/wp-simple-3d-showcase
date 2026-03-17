@@ -25,22 +25,7 @@ class Shortcode {
 	}
 
 	public function render( $atts ) {
-		$atts = shortcode_atts(
-			array(
-				'id'              => '',
-				'model_url'       => '',
-				'poster_url'      => '',
-				'height'          => '',
-				'auto_rotate'     => '',
-				'camera_controls' => '',
-				'background'      => '',
-				'exposure'        => '',
-				'shadow_intensity'=> '',
-				'loading'         => '',
-			),
-			$atts,
-			'simple_3d_showcase'
-		);
+		$atts = is_array( $atts ) ? $atts : array();
 
 		$global = Helpers::get_settings();
 		$item   = array();
@@ -73,7 +58,26 @@ class Shortcode {
 			'fullscreen_label'  => __( 'Fullscreen', 'simple-3d-showcase' ),
 		);
 
-		$config = array_merge( $defaults, $global, $item, $atts );
+		$manual_overrides = array();
+		$manual_keys      = array(
+			'model_url',
+			'poster_url',
+			'height',
+			'auto_rotate',
+			'camera_controls',
+			'background',
+			'exposure',
+			'shadow_intensity',
+			'loading',
+		);
+
+		foreach ( $manual_keys as $key ) {
+			if ( isset( $atts[ $key ] ) && '' !== trim( (string) $atts[ $key ] ) ) {
+				$manual_overrides[ $key ] = $atts[ $key ];
+			}
+		}
+
+		$config = array_merge( $defaults, $item, $manual_overrides );
 
 		$config['height']          = Helpers::sanitize_dimension( $config['height'], $defaults['height'] );
 		$config['background']      = sanitize_hex_color( $config['background'] ) ?: $defaults['background'];
@@ -85,7 +89,7 @@ class Shortcode {
 
 		if ( empty( $config['model_url'] ) ) {
 			$this->asset_loader->mark_frontend_needed();
-			return '<div class="s3ds-no-model">' . esc_html__( 'No model_url provided.', 'simple-3d-showcase' ) . '</div>';
+			return '<div class="s3ds-no-model">' . esc_html__( 'This 3D model is currently unavailable.', 'simple-3d-showcase' ) . '</div>';
 		}
 
 		return $this->renderer->render( $config );
