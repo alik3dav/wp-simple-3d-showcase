@@ -1,0 +1,8 @@
+.s3ds-viewer{position:relative;width:100%;background:var(--s3ds-bg,#dbdbdb);border-radius:16px;overflow:hidden}
+.s3ds-viewer model-viewer{display:block;width:100%;height:var(--s3ds-height,600px);background:var(--s3ds-bg,#dbdbdb)}
+.s3ds-controls{position:absolute;right:16px;bottom:16px;display:flex;gap:8px;z-index:5}
+.s3ds-btn{border:0;border-radius:999px;padding:10px 14px;cursor:pointer;background:rgba(0,0,0,.82);color:#fff;font-size:13px}
+.s3ds-btn:focus-visible{outline:2px solid #fff;outline-offset:2px}
+.s3ds-hint{position:absolute;left:16px;bottom:16px;z-index:5;padding:8px 12px;border-radius:999px;background:rgba(219,219,219,.92);font-size:12px}
+.s3ds-brand{position:absolute;left:16px;top:16px;z-index:5;padding:6px 10px;border-radius:6px;background:rgba(255,255,255,.7);font-size:12px;font-weight:600}
+.s3ds-no-model{padding:16px;border:1px solid #ddd}
