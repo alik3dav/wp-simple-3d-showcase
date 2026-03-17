@@ -93,7 +93,8 @@ class Shortcode {
 		if ( empty( $config['model_url'] ) ) {
 			$config['load_error_type'] = 'missing_url';
 		} elseif ( ! Helpers::is_supported_model_url( $config['model_url'] ) ) {
-			$config['load_error_type'] = 'invalid_file';
+			// Keep rendering with the provided source. Frontend loader will validate real load failures.
+			$config['load_error_type'] = 'possible_invalid_file';
 		}
 
 		return $this->renderer->render( $config );
