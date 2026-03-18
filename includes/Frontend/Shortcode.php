@@ -70,6 +70,7 @@ class Shortcode
             data-hdri-map-url="<?php echo esc_url($hdri_map_url); ?>"
             data-selection-highlight-color="<?php echo esc_attr($interaction_settings['selectionHighlightColor']); ?>"
             data-hover-highlight-color="<?php echo esc_attr($interaction_settings['hoverHighlightColor']); ?>"
+            data-selection-glow-intensity="<?php echo esc_attr((string) $interaction_settings['selectionGlowIntensity']); ?>"
             data-isolate-dim-opacity="<?php echo esc_attr((string) $interaction_settings['isolateDimOpacity']); ?>"
         >
             <div class="wp3ds-toolbar" aria-label="3D viewer controls">
