@@ -36,6 +36,13 @@ class WP3DSViewer {
     this.materialStates = new Map()
     this.isolateDimOpacity = 0.18
 
+    this.partModal = root.querySelector('[data-part-modal]')
+    this.partTitleEl = root.querySelector('[data-part-title]')
+    this.partDescriptionEl = root.querySelector('[data-part-description]')
+    this.partKeyEl = root.querySelector('[data-part-key]')
+    this.partCharacteristicsEl = root.querySelector('[data-part-characteristics]')
+    this.partCharacteristicsSection = root.querySelector('[data-part-characteristics-section]')
+
     this.init()
   }
 
@@ -53,6 +60,10 @@ class WP3DSViewer {
           .map((part) => [
             String(part.key),
             {
+              key: String(part.key),
+              name: String(part.name || 'Part'),
+              description: String(part.description || ''),
+              characteristics: String(part.characteristics || ''),
               x: Number.parseFloat(part.x || 0) || 0,
               y: Number.parseFloat(part.y || 0) || 0,
               z: Number.parseFloat(part.z || 0) || 0,
@@ -79,14 +90,6 @@ class WP3DSViewer {
   }
 
   init() {
-    console.log('WP3DS viewer init', {
-      modelUrl: this.modelUrl,
-      bgColor: this.bgColor,
-      autoRotate: this.autoRotate,
-      explodeStep: this.explodeStep,
-      hdriMapUrl: this.hdriMapUrl,
-    })
-
     if (!this.modelUrl) {
       console.error('No model URL found')
       if (this.loadingEl) {
@@ -175,8 +178,6 @@ class WP3DSViewer {
         this.centerAndFitModel()
         this.calculateExplodeTargets()
         this.hideLoading()
-
-        console.log('GLB model loaded successfully:', this.modelUrl)
       },
       (progress) => {
         if (progress.total) {
@@ -204,6 +205,7 @@ class WP3DSViewer {
         meshIndex += 1
 
         child.userData.wp3dsPartKey = this.createPartKey(child, meshIndex)
+        child.userData.wp3dsPartMeta = this.explodePartsSettings.get(child.userData.wp3dsPartKey) || null
         this.meshParts.push(child)
         this.originalPositions.set(child.uuid, child.position.clone())
 
@@ -271,6 +273,7 @@ class WP3DSViewer {
         opacity: material.opacity,
         transparent: material.transparent,
         depthWrite: material.depthWrite,
+        emissive: material.emissive ? material.emissive.getHex() : null,
       })
     })
 
@@ -297,6 +300,9 @@ class WP3DSViewer {
       material.opacity = state.opacity
       material.transparent = state.transparent
       material.depthWrite = state.depthWrite
+      if (material.emissive && state.emissive !== null) {
+        material.emissive.setHex(state.emissive)
+      }
       material.needsUpdate = true
     })
   }
@@ -310,21 +316,28 @@ class WP3DSViewer {
     })
   }
 
+  setSelectionHighlight(mesh, active) {
+    this.forEachMaterial(mesh, (material) => {
+      if (material.emissive) {
+        material.emissive.setHex(active ? 0x2f6df6 : 0x000000)
+      }
+      material.needsUpdate = true
+    })
+  }
+
   applyIsolationState() {
     this.meshParts.forEach((mesh) => {
       mesh.visible = true
-
-      if (!this.isolateMode || !this.selected) {
-        this.restoreMaterialState(mesh)
-        return
-      }
+      this.restoreMaterialState(mesh)
 
       if (mesh === this.selected) {
-        this.restoreMaterialState(mesh)
+        this.setSelectionHighlight(mesh, true)
         return
       }
 
-      this.setMeshOpacity(mesh, this.isolateDimOpacity)
+      if (this.isolateMode && this.selected) {
+        this.setMeshOpacity(mesh, this.isolateDimOpacity)
+      }
     })
   }
 
@@ -347,6 +360,7 @@ class WP3DSViewer {
     if (!this.model) return
 
     this.isExploded = !this.isExploded
+    this.updateButtonState('explode', this.isExploded)
   }
 
   updateExplodeAnimation() {
@@ -370,10 +384,81 @@ class WP3DSViewer {
   toggleIsolateMode() {
     this.isolateMode = !this.isolateMode
 
-    if (!this.isolateMode) {
-      this.selected = null
+    if (!this.isolateMode && !this.partModal?.hidden && this.selected) {
+      this.applyIsolationState()
     }
 
+    this.updateButtonState('isolate', this.isolateMode)
+    this.applyIsolationState()
+  }
+
+  getPartMeta(mesh) {
+    const storedMeta = mesh.userData.wp3dsPartMeta || {}
+    const name = storedMeta.name || mesh.name || 'Part'
+    const description = storedMeta.description || 'No additional part details have been added yet.'
+    const characteristics = String(storedMeta.characteristics || '')
+      .split(/\r?\n|,/)
+      .map((item) => item.trim())
+      .filter(Boolean)
+
+    return {
+      key: mesh.userData.wp3dsPartKey || mesh.name || 'Part',
+      name,
+      description,
+      characteristics,
+    }
+  }
+
+  showPartModal(mesh) {
+    const meta = this.getPartMeta(mesh)
+
+    if (this.partTitleEl) {
+      this.partTitleEl.textContent = meta.name
+    }
+
+    if (this.partDescriptionEl) {
+      this.partDescriptionEl.textContent = meta.description
+    }
+
+    if (this.partKeyEl) {
+      this.partKeyEl.textContent = meta.key
+    }
+
+    if (this.partCharacteristicsEl && this.partCharacteristicsSection) {
+      if (meta.characteristics.length) {
+        this.partCharacteristicsEl.innerHTML = meta.characteristics
+          .map((item) => `<li>${this.escapeHtml(item)}</li>`)
+          .join('')
+        this.partCharacteristicsSection.hidden = false
+      } else {
+        this.partCharacteristicsEl.innerHTML = ''
+        this.partCharacteristicsSection.hidden = true
+      }
+    }
+
+    if (this.partModal) {
+      this.partModal.hidden = false
+      this.partModal.classList.add('is-visible')
+    }
+  }
+
+  hidePartModal() {
+    if (this.partModal) {
+      this.partModal.hidden = true
+      this.partModal.classList.remove('is-visible')
+    }
+  }
+
+  toggleSelectedPart(mesh) {
+    if (this.selected === mesh) {
+      this.selected = null
+      this.hidePartModal()
+      this.applyIsolationState()
+      return
+    }
+
+    this.selected = mesh
+    this.showPartModal(mesh)
     this.applyIsolationState()
   }
 
@@ -385,19 +470,25 @@ class WP3DSViewer {
     this.raycaster.setFromCamera(this.pointer, this.camera)
     const intersects = this.raycaster.intersectObjects(this.meshParts, true)
 
-    if (!intersects.length) return
-
-    const obj = intersects[0].object
-
-    if (this.isolateMode) {
-      this.selected = obj
-      this.applyIsolationState()
+    if (!intersects.length) {
+      if (!this.isolateMode) {
+        this.selected = null
+        this.hidePartModal()
+        this.applyIsolationState()
+      }
+      return
     }
+
+    this.toggleSelectedPart(intersects[0].object)
   }
 
   resetView() {
     this.controls.reset()
     this.isExploded = false
+    this.selected = null
+    this.hidePartModal()
+    this.updateButtonState('explode', false)
+    this.applyIsolationState()
   }
 
   toggleFullscreen() {
@@ -432,15 +523,48 @@ class WP3DSViewer {
   }
 
   applyHover(mesh) {
-    if (mesh.material && mesh.material.emissive) {
-      mesh.material.emissive.setHex(0x333333)
+    if (mesh === this.selected) {
+      return
     }
+
+    this.forEachMaterial(mesh, (material) => {
+      if (material.emissive) {
+        material.emissive.setHex(0x333333)
+      }
+    })
   }
 
   clearHover(mesh) {
-    if (mesh.material && mesh.material.emissive) {
-      mesh.material.emissive.setHex(0x000000)
+    if (mesh === this.selected) {
+      this.setSelectionHighlight(mesh, true)
+      return
     }
+
+    this.forEachMaterial(mesh, (material) => {
+      if (material.emissive) {
+        material.emissive.setHex(0x000000)
+      }
+    })
+  }
+
+  updateButtonState(action, active) {
+    const button = this.root.querySelector(`[data-action="${action}"]`)
+
+    if (!button) {
+      return
+    }
+
+    button.classList.toggle('is-active', active)
+    button.setAttribute('aria-pressed', active ? 'true' : 'false')
+  }
+
+  escapeHtml(value) {
+    return String(value)
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#039;')
   }
 
   bindUI() {
@@ -454,6 +578,7 @@ class WP3DSViewer {
 
     this.root.querySelector('[data-action="autorotate"]')?.addEventListener('click', () => {
       this.controls.autoRotate = !this.controls.autoRotate
+      this.updateButtonState('autorotate', this.controls.autoRotate)
     })
 
     this.root.querySelector('[data-action="explode"]')?.addEventListener('click', () => {
@@ -463,6 +588,16 @@ class WP3DSViewer {
     this.root.querySelector('[data-action="fullscreen"]')?.addEventListener('click', () => {
       this.toggleFullscreen()
     })
+
+    this.root.querySelector('[data-action="close-part-modal"]')?.addEventListener('click', () => {
+      this.selected = null
+      this.hidePartModal()
+      this.applyIsolationState()
+    })
+
+    this.updateButtonState('autorotate', this.controls.autoRotate)
+    this.updateButtonState('explode', this.isExploded)
+    this.updateButtonState('isolate', this.isolateMode)
   }
 
   bindEvents() {

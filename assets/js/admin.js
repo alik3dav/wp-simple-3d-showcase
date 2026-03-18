@@ -47,6 +47,8 @@ function normalizeStoredParts(rawValue) {
       .map((part) => ({
         key: String(part.key),
         name: String(part.name || 'Part'),
+        description: String(part.description || ''),
+        characteristics: String(part.characteristics || ''),
         x: Number.parseFloat(part.x || 0) || 0,
         y: Number.parseFloat(part.y || 0) || 0,
         z: Number.parseFloat(part.z || 0) || 0,
@@ -91,6 +93,8 @@ function renderPartsTable(container, parts) {
       <thead>
         <tr>
           <th>Part</th>
+          <th>Description</th>
+          <th>Characteristics</th>
           <th>X</th>
           <th>Y</th>
           <th>Z</th>
@@ -102,8 +106,17 @@ function renderPartsTable(container, parts) {
             (part, index) => `
               <tr>
                 <td>
-                  <strong>${escapeHtml(part.name)}</strong>
+                  <label>
+                    <span class="screen-reader-text">Display name</span>
+                    <input type="text" class="regular-text" data-text-input="name" data-index="${index}" value="${escapeHtml(part.name)}" placeholder="Display name">
+                  </label>
                   <div class="description">${escapeHtml(part.key)}</div>
+                </td>
+                <td>
+                  <textarea rows="3" class="large-text" data-text-input="description" data-index="${index}" placeholder="Short summary shown in the viewer">${escapeHtml(part.description)}</textarea>
+                </td>
+                <td>
+                  <textarea rows="3" class="large-text" data-text-input="characteristics" data-index="${index}" placeholder="One characteristic per line">${escapeHtml(part.characteristics)}</textarea>
                 </td>
                 <td><input type="number" step="0.001" class="small-text" data-axis-input="x" data-index="${index}" value="${formatNumber(part.x)}"></td>
                 <td><input type="number" step="0.001" class="small-text" data-axis-input="y" data-index="${index}" value="${formatNumber(part.y)}"></td>
@@ -172,7 +185,9 @@ function detectModelParts(url, container) {
 
         detectedParts.push({
           key,
-          name,
+          name: storedPart ? storedPart.name : name,
+          description: storedPart ? storedPart.description : '',
+          characteristics: storedPart ? storedPart.characteristics : '',
           x: storedPart ? storedPart.x : Number.parseFloat(direction.x.toFixed(3)),
           y: storedPart ? storedPart.y : Number.parseFloat(direction.y.toFixed(3)),
           z: storedPart ? storedPart.z : Number.parseFloat(direction.z.toFixed(3)),
@@ -263,21 +278,36 @@ function initExplodePartsManager() {
   })
 
   container.addEventListener('input', (event) => {
-    const input = event.target.closest('[data-axis-input]')
-
-    if (!input) {
-      return
-    }
-
+    const axisInput = event.target.closest('[data-axis-input]')
+    const textInput = event.target.closest('[data-text-input]')
     const parts = normalizeStoredParts(container.querySelector('#wp3ds_explode_parts')?.value || '[]')
-    const partIndex = Number.parseInt(input.dataset.index || '-1', 10)
-    const axis = input.dataset.axisInput
 
-    if (!parts[partIndex] || !['x', 'y', 'z'].includes(axis)) {
+    if (axisInput) {
+      const partIndex = Number.parseInt(axisInput.dataset.index || '-1', 10)
+      const axis = axisInput.dataset.axisInput
+
+      if (!parts[partIndex] || !['x', 'y', 'z'].includes(axis)) {
+        return
+      }
+
+      parts[partIndex][axis] = Number.parseFloat(axisInput.value || '0') || 0
+      container.dataset.explodeParts = JSON.stringify(parts)
+      syncHiddenField(container, parts)
       return
     }
 
-    parts[partIndex][axis] = Number.parseFloat(input.value || '0') || 0
+    if (!textInput) {
+      return
+    }
+
+    const partIndex = Number.parseInt(textInput.dataset.index || '-1', 10)
+    const field = textInput.dataset.textInput
+
+    if (!parts[partIndex] || !['name', 'description', 'characteristics'].includes(field)) {
+      return
+    }
+
+    parts[partIndex][field] = textInput.value
     container.dataset.explodeParts = JSON.stringify(parts)
     syncHiddenField(container, parts)
   })

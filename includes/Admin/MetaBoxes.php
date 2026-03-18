@@ -61,7 +61,7 @@ class MetaBoxes
                 <input type="hidden" id="wp3ds_explode_parts" name="wp3ds_explode_parts" value="<?php echo esc_attr($explode_parts); ?>">
                 <div class="wp3ds-explode-parts__header">
                     <strong><?php esc_html_e('Explode View Parts', 'wp-3d-showcase'); ?></strong>
-                    <p class="description"><?php esc_html_e('The plugin automatically detects mesh parts from the GLB model and lets you fine-tune the explode direction for each part on the X, Y, and Z axes. Set all three axes to 0 to keep a part fixed during explode view.', 'wp-3d-showcase'); ?></p>
+                    <p class="description"><?php esc_html_e('The plugin automatically detects mesh parts from the GLB model and lets you fine-tune the explode direction plus the info shown in the front-end part details card. Add characteristics on separate lines for a compact bullet list.', 'wp-3d-showcase'); ?></p>
                 </div>
                 <div class="wp3ds-explode-parts__status" data-parts-status>
                     <?php esc_html_e('Select or enter a GLB file URL to detect model parts.', 'wp-3d-showcase'); ?>
@@ -115,11 +115,13 @@ class MetaBoxes
             }
 
             $sanitized[] = [
-                'key'  => sanitize_text_field((string) $part['key']),
-                'name' => sanitize_text_field((string) ($part['name'] ?? 'Part')),
-                'x'    => $this->sanitize_axis_value($part['x'] ?? 0),
-                'y'    => $this->sanitize_axis_value($part['y'] ?? 0),
-                'z'    => $this->sanitize_axis_value($part['z'] ?? 0),
+                'key'             => sanitize_text_field((string) $part['key']),
+                'name'            => sanitize_text_field((string) ($part['name'] ?? 'Part')),
+                'description'     => sanitize_textarea_field((string) ($part['description'] ?? '')),
+                'characteristics' => sanitize_textarea_field((string) ($part['characteristics'] ?? '')),
+                'x'               => $this->sanitize_axis_value($part['x'] ?? 0),
+                'y'               => $this->sanitize_axis_value($part['y'] ?? 0),
+                'z'               => $this->sanitize_axis_value($part['z'] ?? 0),
             ];
         }
 
