@@ -21,6 +21,8 @@ class WP3DSViewer {
     this.model = null
     this.meshParts = []
     this.originalPositions = new Map()
+    this.explodeTargets = new Map()
+    this.explodeLerpAlpha = 0.12
     this.isExploded = false
     this.raycaster = new THREE.Raycaster()
     this.pointer = new THREE.Vector2()
@@ -129,6 +131,7 @@ class WP3DSViewer {
 
         this.collectParts()
         this.centerAndFitModel()
+        this.calculateExplodeTargets()
         this.hideLoading()
 
         console.log('GLB model loaded successfully:', this.modelUrl)
@@ -170,6 +173,33 @@ class WP3DSViewer {
     })
   }
 
+  calculateExplodeTargets() {
+    if (!this.model) return
+
+    const box = new THREE.Box3().setFromObject(this.model)
+    const center = box.getCenter(new THREE.Vector3())
+
+    this.explodeTargets.clear()
+
+    this.meshParts.forEach((mesh) => {
+      const original = this.originalPositions.get(mesh.uuid)
+      if (!original) return
+
+      const worldPos = new THREE.Vector3()
+      mesh.getWorldPosition(worldPos)
+
+      const dir = worldPos.clone().sub(center)
+
+      if (dir.lengthSq() === 0) {
+        dir.set(0, 1, 0)
+      } else {
+        dir.normalize()
+      }
+
+      this.explodeTargets.set(mesh.uuid, original.clone().add(dir.multiplyScalar(this.explodeStep)))
+    })
+  }
+
   centerAndFitModel() {
     const box = new THREE.Box3().setFromObject(this.model)
     const center = box.getCenter(new THREE.Vector3())
@@ -188,27 +218,25 @@ class WP3DSViewer {
   explode() {
     if (!this.model) return
 
-    const box = new THREE.Box3().setFromObject(this.model)
-    const center = box.getCenter(new THREE.Vector3())
+    this.isExploded = !this.isExploded
+  }
 
-    if (!this.isExploded) {
-      this.meshParts.forEach((mesh) => {
-        const worldPos = new THREE.Vector3()
-        mesh.getWorldPosition(worldPos)
+  updateExplodeAnimation() {
+    if (!this.meshParts.length) return
 
-        const dir = worldPos.clone().sub(center).normalize()
-        mesh.position.add(dir.multiplyScalar(this.explodeStep))
-      })
-      this.isExploded = true
-    } else {
-      this.meshParts.forEach((mesh) => {
-        const original = this.originalPositions.get(mesh.uuid)
-        if (original) {
-          mesh.position.copy(original)
-        }
-      })
-      this.isExploded = false
-    }
+    this.meshParts.forEach((mesh) => {
+      const original = this.originalPositions.get(mesh.uuid)
+      const exploded = this.explodeTargets.get(mesh.uuid)
+      const target = this.isExploded ? exploded : original
+
+      if (!target) return
+
+      mesh.position.lerp(target, this.explodeLerpAlpha)
+
+      if (mesh.position.distanceToSquared(target) < 0.000001) {
+        mesh.position.copy(target)
+      }
+    })
   }
 
   toggleIsolateMode() {
@@ -260,9 +288,7 @@ class WP3DSViewer {
 
   resetView() {
     this.controls.reset()
-    if (this.isExploded) {
-      this.explode()
-    }
+    this.isExploded = false
   }
 
   toggleFullscreen() {
@@ -353,6 +379,7 @@ class WP3DSViewer {
 
   animate() {
     requestAnimationFrame(() => this.animate())
+    this.updateExplodeAnimation()
     if (this.controls) this.controls.update()
     if (this.renderer && this.scene && this.camera) {
       this.renderer.render(this.scene, this.camera)
