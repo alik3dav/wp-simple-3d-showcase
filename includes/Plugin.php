@@ -5,6 +5,7 @@ namespace WP3DS;
 use WP3DS\PostTypes\ShowcasePostType;
 use WP3DS\Admin\MetaBoxes;
 use WP3DS\Admin\AdminAssets;
+use WP3DS\Admin\SettingsPage;
 use WP3DS\Frontend\Shortcode;
 use WP3DS\Frontend\FrontendAssets;
 use WP3DS\REST\Routes;
@@ -22,7 +23,10 @@ class Plugin
         add_action('add_meta_boxes', [new MetaBoxes(), 'register']);
         add_action('save_post_wp3ds_item', [new MetaBoxes(), 'save']);
 
+        $settings_page = new SettingsPage();
+
         add_action('admin_enqueue_scripts', [new AdminAssets(), 'enqueue']);
+        $settings_page->hooks();
 
         $frontend_assets = new FrontendAssets();
         $frontend_assets->hooks();

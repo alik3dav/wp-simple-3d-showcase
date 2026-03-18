@@ -1,6 +1,7 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
+import { RGBELoader } from 'three/addons/loaders/RGBELoader.js'
 
 class WP3DSViewer {
   constructor(root) {
@@ -11,6 +12,7 @@ class WP3DSViewer {
     this.bgColor = root.dataset.bgColor || '#f5f5f5'
     this.autoRotate = root.dataset.autoRotate === 'true'
     this.explodeStep = parseFloat(root.dataset.explodeStep || '0.15')
+    this.hdriMapUrl = root.dataset.hdriMapUrl || ''
 
     this.scene = null
     this.camera = null
@@ -23,6 +25,8 @@ class WP3DSViewer {
     this.raycaster = new THREE.Raycaster()
     this.pointer = new THREE.Vector2()
     this.hovered = null
+    this.pmremGenerator = null
+    this.environmentMap = null
 
     this.isolateMode = false
     this.selected = null
@@ -35,7 +39,8 @@ class WP3DSViewer {
       modelUrl: this.modelUrl,
       bgColor: this.bgColor,
       autoRotate: this.autoRotate,
-      explodeStep: this.explodeStep
+      explodeStep: this.explodeStep,
+      hdriMapUrl: this.hdriMapUrl,
     })
 
     if (!this.modelUrl) {
@@ -61,8 +66,14 @@ class WP3DSViewer {
       antialias: true,
       alpha: false,
     })
+    this.renderer.outputColorSpace = THREE.SRGBColorSpace
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping
+    this.renderer.toneMappingExposure = 1
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
     this.renderer.setSize(width, height)
+
+    this.pmremGenerator = new THREE.PMREMGenerator(this.renderer)
+    this.pmremGenerator.compileEquirectangularShader()
 
     const ambient = new THREE.AmbientLight(0xffffff, 1.4)
     this.scene.add(ambient)
@@ -76,10 +87,35 @@ class WP3DSViewer {
     this.controls.autoRotate = this.autoRotate
     this.controls.autoRotateSpeed = 1.2
 
+    this.loadEnvironmentMap()
     this.loadModel()
     this.bindUI()
     this.bindEvents()
     this.animate()
+  }
+
+  loadEnvironmentMap() {
+    if (!this.hdriMapUrl || !this.scene || !this.pmremGenerator) {
+      return
+    }
+
+    const rgbeLoader = new RGBELoader()
+
+    rgbeLoader.load(
+      this.hdriMapUrl,
+      (texture) => {
+        const envTexture = this.pmremGenerator.fromEquirectangular(texture).texture
+
+        texture.dispose()
+
+        this.environmentMap = envTexture
+        this.scene.environment = envTexture
+      },
+      undefined,
+      (error) => {
+        console.error('Failed to load HDRI map:', error)
+      }
+    )
   }
 
   loadModel() {
@@ -124,6 +160,11 @@ class WP3DSViewer {
 
         if (child.material) {
           child.material = child.material.clone()
+
+          if (this.environmentMap) {
+            child.material.envMap = this.environmentMap
+            child.material.needsUpdate = true
+          }
         }
       }
     })
@@ -143,8 +184,6 @@ class WP3DSViewer {
     this.controls.target.set(0, 0, 0)
     this.controls.update()
   }
-
-  
 
   explode() {
     if (!this.model) return
@@ -172,53 +211,52 @@ class WP3DSViewer {
     }
   }
 
-toggleIsolateMode() {
-  this.isolateMode = !this.isolateMode
+  toggleIsolateMode() {
+    this.isolateMode = !this.isolateMode
 
-  if (!this.isolateMode) {
-    this.meshParts.forEach(mesh => {
-      mesh.visible = true
-    })
-    this.selected = null
+    if (!this.isolateMode) {
+      this.meshParts.forEach((mesh) => {
+        mesh.visible = true
+      })
+      this.selected = null
+    }
   }
-}
 
-onClick(event) {
-  const rect = this.canvas.getBoundingClientRect()
-  this.pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1
-  this.pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1
+  onClick(event) {
+    const rect = this.canvas.getBoundingClientRect()
+    this.pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1
+    this.pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1
 
-  this.raycaster.setFromCamera(this.pointer, this.camera)
-  const intersects = this.raycaster.intersectObjects(this.meshParts, true)
+    this.raycaster.setFromCamera(this.pointer, this.camera)
+    const intersects = this.raycaster.intersectObjects(this.meshParts, true)
 
-  if (!intersects.length) return
+    if (!intersects.length) return
 
-  const obj = intersects[0].object
+    const obj = intersects[0].object
 
-  if (this.isolateMode) {
-    this.selected = obj
+    if (this.isolateMode) {
+      this.selected = obj
 
-    this.meshParts.forEach(mesh => {
-      mesh.visible = (mesh === obj)
-    })
+      this.meshParts.forEach((mesh) => {
+        mesh.visible = mesh === obj
+      })
 
-    this.focusObject(obj)
+      this.focusObject(obj)
+    }
   }
-}
 
-focusObject(obj) {
-  const box = new THREE.Box3().setFromObject(obj)
-  const center = box.getCenter(new THREE.Vector3())
-  const size = box.getSize(new THREE.Vector3())
+  focusObject(obj) {
+    const box = new THREE.Box3().setFromObject(obj)
+    const center = box.getCenter(new THREE.Vector3())
+    const size = box.getSize(new THREE.Vector3())
 
-  const maxDim = Math.max(size.x, size.y, size.z)
-  const distance = Math.max(maxDim * 2, 1)
+    const maxDim = Math.max(size.x, size.y, size.z)
+    const distance = Math.max(maxDim * 2, 1)
 
-  this.camera.position.copy(center.clone().add(new THREE.Vector3(0, 0, distance)))
-  this.controls.target.copy(center)
-  this.controls.update()
-}
-
+    this.camera.position.copy(center.clone().add(new THREE.Vector3(0, 0, distance)))
+    this.controls.target.copy(center)
+    this.controls.update()
+  }
 
   resetView() {
     this.controls.reset()
@@ -293,8 +331,6 @@ focusObject(obj) {
   }
 
   bindEvents() {
-    
-
     window.addEventListener('resize', () => {
       const width = this.root.clientWidth || 800
       const wrap = this.root.querySelector('.wp3ds-canvas-wrap')

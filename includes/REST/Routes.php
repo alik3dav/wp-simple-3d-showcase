@@ -30,6 +30,7 @@ class Routes
             'bg_color'     => get_post_meta($post_id, '_wp3ds_bg_color', true),
             'auto_rotate'  => get_post_meta($post_id, '_wp3ds_auto_rotate', true) === '1',
             'explode_step' => get_post_meta($post_id, '_wp3ds_explode_step', true),
+            'hdri_map_url' => get_option('wp3ds_hdri_map_url', ''),
         ]);
     }
 }

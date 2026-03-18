@@ -10,7 +10,9 @@ class AdminAssets
     {
         global $post_type;
 
-        if ($post_type !== 'wp3ds_item') {
+        $allowed_hooks = ['settings_page_wp3ds-settings'];
+
+        if ($post_type !== 'wp3ds_item' && !in_array($hook, $allowed_hooks, true)) {
             return;
         }
 
