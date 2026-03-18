@@ -22,10 +22,14 @@ class MetaBoxes
     {
         wp_nonce_field('wp3ds_save_meta', 'wp3ds_meta_nonce');
 
-        $model_url    = get_post_meta($post->ID, '_wp3ds_model_url', true);
-        $bg_color     = get_post_meta($post->ID, '_wp3ds_bg_color', true) ?: '#f5f5f5';
-        $auto_rotate  = get_post_meta($post->ID, '_wp3ds_auto_rotate', true);
-        $explode_step = get_post_meta($post->ID, '_wp3ds_explode_step', true) ?: '0.15';
+        $model_url       = get_post_meta($post->ID, '_wp3ds_model_url', true);
+        $bg_color        = get_post_meta($post->ID, '_wp3ds_bg_color', true) ?: '#f5f5f5';
+        $auto_rotate     = get_post_meta($post->ID, '_wp3ds_auto_rotate', true);
+        $explode_step    = get_post_meta($post->ID, '_wp3ds_explode_step', true) ?: '0.15';
+        $explode_parts   = get_post_meta($post->ID, '_wp3ds_explode_parts', true);
+        $explode_parts   = is_string($explode_parts) ? $explode_parts : '[]';
+        $decoded_parts   = json_decode($explode_parts, true);
+        $explode_parts   = is_array($decoded_parts) ? wp_json_encode($decoded_parts) : '[]';
         ?>
         <div class="wp3ds-admin-fields">
             <p>
@@ -49,6 +53,21 @@ class MetaBoxes
                     <?php esc_html_e('Enable auto-rotate by default', 'wp-3d-showcase'); ?>
                 </label>
             </p>
+
+            <div
+                class="wp3ds-explode-parts"
+                data-explode-parts="<?php echo esc_attr($explode_parts); ?>"
+            >
+                <input type="hidden" id="wp3ds_explode_parts" name="wp3ds_explode_parts" value="<?php echo esc_attr($explode_parts); ?>">
+                <div class="wp3ds-explode-parts__header">
+                    <strong><?php esc_html_e('Explode View Parts', 'wp-3d-showcase'); ?></strong>
+                    <p class="description"><?php esc_html_e('The plugin automatically detects mesh parts from the GLB model and lets you fine-tune the explode direction for each part on the X, Y, and Z axes.', 'wp-3d-showcase'); ?></p>
+                </div>
+                <div class="wp3ds-explode-parts__status" data-parts-status>
+                    <?php esc_html_e('Select or enter a GLB file URL to detect model parts.', 'wp-3d-showcase'); ?>
+                </div>
+                <div class="wp3ds-explode-parts__table-wrap" data-parts-list hidden></div>
+            </div>
         </div>
         <?php
     }
@@ -67,14 +86,48 @@ class MetaBoxes
             return;
         }
 
-        $model_url    = isset($_POST['wp3ds_model_url']) ? esc_url_raw(wp_unslash($_POST['wp3ds_model_url'])) : '';
-        $bg_color     = isset($_POST['wp3ds_bg_color']) ? sanitize_hex_color(wp_unslash($_POST['wp3ds_bg_color'])) : '#f5f5f5';
-        $explode_step = isset($_POST['wp3ds_explode_step']) ? sanitize_text_field(wp_unslash($_POST['wp3ds_explode_step'])) : '0.15';
-        $auto_rotate  = isset($_POST['wp3ds_auto_rotate']) ? '1' : '0';
+        $model_url      = isset($_POST['wp3ds_model_url']) ? esc_url_raw(wp_unslash($_POST['wp3ds_model_url'])) : '';
+        $bg_color       = isset($_POST['wp3ds_bg_color']) ? sanitize_hex_color(wp_unslash($_POST['wp3ds_bg_color'])) : '#f5f5f5';
+        $explode_step   = isset($_POST['wp3ds_explode_step']) ? sanitize_text_field(wp_unslash($_POST['wp3ds_explode_step'])) : '0.15';
+        $auto_rotate    = isset($_POST['wp3ds_auto_rotate']) ? '1' : '0';
+        $explode_parts  = isset($_POST['wp3ds_explode_parts']) ? $this->sanitize_explode_parts_json(wp_unslash($_POST['wp3ds_explode_parts'])) : '[]';
 
         update_post_meta($post_id, '_wp3ds_model_url', $model_url);
         update_post_meta($post_id, '_wp3ds_bg_color', $bg_color);
         update_post_meta($post_id, '_wp3ds_explode_step', $explode_step);
         update_post_meta($post_id, '_wp3ds_auto_rotate', $auto_rotate);
+        update_post_meta($post_id, '_wp3ds_explode_parts', $explode_parts);
+    }
+
+    private function sanitize_explode_parts_json(string $raw_json): string
+    {
+        $decoded = json_decode($raw_json, true);
+
+        if (!is_array($decoded)) {
+            return '[]';
+        }
+
+        $sanitized = [];
+
+        foreach ($decoded as $part) {
+            if (!is_array($part) || empty($part['key'])) {
+                continue;
+            }
+
+            $sanitized[] = [
+                'key'  => sanitize_text_field((string) $part['key']),
+                'name' => sanitize_text_field((string) ($part['name'] ?? 'Part')),
+                'x'    => $this->sanitize_axis_value($part['x'] ?? 0),
+                'y'    => $this->sanitize_axis_value($part['y'] ?? 0),
+                'z'    => $this->sanitize_axis_value($part['z'] ?? 0),
+            ];
+        }
+
+        return wp_json_encode($sanitized) ?: '[]';
+    }
+
+    private function sanitize_axis_value($value): float
+    {
+        return round((float) $value, 4);
     }
 }

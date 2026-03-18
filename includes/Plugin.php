@@ -25,7 +25,7 @@ class Plugin
 
         $settings_page = new SettingsPage();
 
-        add_action('admin_enqueue_scripts', [new AdminAssets(), 'enqueue']);
+        (new AdminAssets())->hooks();
         $settings_page->hooks();
 
         $frontend_assets = new FrontendAssets();

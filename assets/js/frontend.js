@@ -13,6 +13,7 @@ class WP3DSViewer {
     this.autoRotate = root.dataset.autoRotate === 'true'
     this.explodeStep = parseFloat(root.dataset.explodeStep || '0.15')
     this.hdriMapUrl = root.dataset.hdriMapUrl || ''
+    this.explodePartsSettings = this.parseExplodeParts(root.dataset.explodeParts || '[]')
 
     this.scene = null
     this.camera = null
@@ -34,6 +35,45 @@ class WP3DSViewer {
     this.selected = null
 
     this.init()
+  }
+
+  parseExplodeParts(rawValue) {
+    try {
+      const parsed = JSON.parse(rawValue)
+
+      if (!Array.isArray(parsed)) {
+        return new Map()
+      }
+
+      return new Map(
+        parsed
+          .filter((part) => part && part.key)
+          .map((part) => [
+            String(part.key),
+            {
+              x: Number.parseFloat(part.x || 0) || 0,
+              y: Number.parseFloat(part.y || 0) || 0,
+              z: Number.parseFloat(part.z || 0) || 0,
+            },
+          ])
+      )
+    } catch (error) {
+      console.error('Failed to parse explode part settings.', error)
+      return new Map()
+    }
+  }
+
+  createPartKey(mesh, fallbackIndex) {
+    const segments = []
+    let node = mesh
+
+    while (node) {
+      const label = node.name || node.type || 'Node'
+      segments.unshift(label)
+      node = node.parent && node.parent.type !== 'Scene' ? node.parent : null
+    }
+
+    return `${segments.join(' / ')}#${fallbackIndex}`
   }
 
   init() {
@@ -155,9 +195,13 @@ class WP3DSViewer {
 
   collectParts() {
     this.meshParts = []
+    let meshIndex = 0
 
     this.model.traverse((child) => {
       if (child.isMesh) {
+        meshIndex += 1
+
+        child.userData.wp3dsPartKey = this.createPartKey(child, meshIndex)
         this.meshParts.push(child)
         this.originalPositions.set(child.uuid, child.position.clone())
 
@@ -188,15 +232,24 @@ class WP3DSViewer {
       const worldPos = new THREE.Vector3()
       mesh.getWorldPosition(worldPos)
 
-      const dir = worldPos.clone().sub(center)
+      const defaultDirection = worldPos.clone().sub(center)
 
-      if (dir.lengthSq() === 0) {
-        dir.set(0, 1, 0)
+      if (defaultDirection.lengthSq() === 0) {
+        defaultDirection.set(0, 1, 0)
       } else {
-        dir.normalize()
+        defaultDirection.normalize()
       }
 
-      this.explodeTargets.set(mesh.uuid, original.clone().add(dir.multiplyScalar(this.explodeStep)))
+      const configuredDirection = this.explodePartsSettings.get(mesh.userData.wp3dsPartKey)
+      const direction = configuredDirection
+        ? new THREE.Vector3(configuredDirection.x, configuredDirection.y, configuredDirection.z)
+        : defaultDirection
+
+      if (direction.lengthSq() === 0) {
+        direction.copy(defaultDirection)
+      }
+
+      this.explodeTargets.set(mesh.uuid, original.clone().add(direction.multiplyScalar(this.explodeStep)))
     })
   }
 

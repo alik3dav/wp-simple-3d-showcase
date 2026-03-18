@@ -43,8 +43,9 @@ class Shortcode
         $model_url    = get_post_meta($post_id, '_wp3ds_model_url', true);
         $bg_color     = get_post_meta($post_id, '_wp3ds_bg_color', true) ?: '#f5f5f5';
         $auto_rotate  = get_post_meta($post_id, '_wp3ds_auto_rotate', true) === '1';
-        $explode_step = get_post_meta($post_id, '_wp3ds_explode_step', true) ?: '0.15';
-        $hdri_map_url = get_option('wp3ds_hdri_map_url', '');
+        $explode_step  = get_post_meta($post_id, '_wp3ds_explode_step', true) ?: '0.15';
+        $explode_parts = get_post_meta($post_id, '_wp3ds_explode_parts', true) ?: '[]';
+        $hdri_map_url  = get_option('wp3ds_hdri_map_url', '');
 
         if (!$model_url) {
             return '<p>No GLB file assigned.</p>';
@@ -62,6 +63,7 @@ class Shortcode
             data-bg-color="<?php echo esc_attr($bg_color); ?>"
             data-auto-rotate="<?php echo esc_attr($auto_rotate ? 'true' : 'false'); ?>"
             data-explode-step="<?php echo esc_attr($explode_step); ?>"
+            data-explode-parts="<?php echo esc_attr($explode_parts); ?>"
             data-hdri-map-url="<?php echo esc_url($hdri_map_url); ?>"
         >
             <div class="wp3ds-toolbar">

@@ -2,7 +2,35 @@
   margin-bottom: 16px;
 }
 
-.wp3ds-admin-fields input[type="text"],
-.wp3ds-admin-fields input[type="number"] {
+.wp3ds-admin-fields input[type='text'],
+.wp3ds-admin-fields input[type='number'] {
   max-width: 520px;
+}
+
+.wp3ds-explode-parts {
+  margin-top: 24px;
+  border-top: 1px solid #dcdcde;
+  padding-top: 20px;
+}
+
+.wp3ds-explode-parts__header {
+  margin-bottom: 12px;
+}
+
+.wp3ds-explode-parts__status {
+  margin-bottom: 12px;
+  color: #50575e;
+}
+
+.wp3ds-explode-parts__table-wrap {
+  overflow-x: auto;
+}
+
+.wp3ds-parts-table th,
+.wp3ds-parts-table td {
+  vertical-align: top;
+}
+
+.wp3ds-parts-table .description {
+  word-break: break-word;
 }
