@@ -10,9 +10,11 @@ class SettingsPage
     private const OPTION_HDRI_MAP = 'wp3ds_hdri_map_url';
     private const OPTION_SELECTION_HIGHLIGHT_COLOR = 'wp3ds_selection_highlight_color';
     private const OPTION_HOVER_HIGHLIGHT_COLOR = 'wp3ds_hover_highlight_color';
+    private const OPTION_SELECTION_GLOW_INTENSITY = 'wp3ds_selection_glow_intensity';
     private const OPTION_ISOLATE_DIM_OPACITY = 'wp3ds_isolate_dim_opacity';
     private const DEFAULT_SELECTION_HIGHLIGHT_COLOR = '#2f6df6';
     private const DEFAULT_HOVER_HIGHLIGHT_COLOR = '#333333';
+    private const DEFAULT_SELECTION_GLOW_INTENSITY = 0.22;
     private const DEFAULT_ISOLATE_DIM_OPACITY = 0.18;
     private const HDR_EXTENSION = 'hdr';
     private const HDR_MIME_TYPE = 'application/octet-stream';
@@ -70,6 +72,16 @@ class SettingsPage
 
         register_setting(
             'wp3ds_settings',
+            self::OPTION_SELECTION_GLOW_INTENSITY,
+            [
+                'type'              => 'number',
+                'sanitize_callback' => [$this, 'sanitize_selection_glow_intensity'],
+                'default'           => self::DEFAULT_SELECTION_GLOW_INTENSITY,
+            ]
+        );
+
+        register_setting(
+            'wp3ds_settings',
             self::OPTION_ISOLATE_DIM_OPACITY,
             [
                 'type'              => 'number',
@@ -121,6 +133,14 @@ class SettingsPage
         );
 
         add_settings_field(
+            self::OPTION_SELECTION_GLOW_INTENSITY,
+            __('Selection Glow Strength', 'wp-3d-showcase'),
+            [$this, 'render_selection_glow_intensity_field'],
+            'wp3ds-settings',
+            'wp3ds_interaction_section'
+        );
+
+        add_settings_field(
             self::OPTION_ISOLATE_DIM_OPACITY,
             __('Background Part Opacity', 'wp-3d-showcase'),
             [$this, 'render_isolate_dim_opacity_field'],
@@ -163,12 +183,14 @@ class SettingsPage
         return $this->sanitize_hex_color_setting($value, self::DEFAULT_HOVER_HIGHLIGHT_COLOR);
     }
 
+    public function sanitize_selection_glow_intensity($value): float
+    {
+        return $this->sanitize_unit_interval_setting($value, self::DEFAULT_SELECTION_GLOW_INTENSITY);
+    }
+
     public function sanitize_isolate_dim_opacity($value): float
     {
-        $opacity = is_numeric($value) ? (float) $value : self::DEFAULT_ISOLATE_DIM_OPACITY;
-        $opacity = max(0, min(1, $opacity));
-
-        return round($opacity, 2);
+        return $this->sanitize_unit_interval_setting($value, self::DEFAULT_ISOLATE_DIM_OPACITY);
     }
 
     public function render_hdri_field(): void
@@ -201,7 +223,7 @@ class SettingsPage
         $this->render_color_field(
             self::OPTION_SELECTION_HIGHLIGHT_COLOR,
             $this->get_selection_highlight_color(),
-            __('Used when a part is selected.', 'wp-3d-showcase')
+            __('Outline color used when a part is selected.', 'wp-3d-showcase')
         );
     }
 
@@ -212,6 +234,27 @@ class SettingsPage
             $this->get_hover_highlight_color(),
             __('Used when a part is hovered before selection.', 'wp-3d-showcase')
         );
+    }
+
+    public function render_selection_glow_intensity_field(): void
+    {
+        ?>
+        <div class="wp3ds-admin-fields">
+            <input
+                type="number"
+                id="<?php echo esc_attr(self::OPTION_SELECTION_GLOW_INTENSITY); ?>"
+                name="<?php echo esc_attr(self::OPTION_SELECTION_GLOW_INTENSITY); ?>"
+                value="<?php echo esc_attr((string) $this->get_selection_glow_intensity()); ?>"
+                min="0"
+                max="1"
+                step="0.01"
+                class="small-text"
+            >
+            <p class="description">
+                <?php esc_html_e('Controls how strong the outline glow appears. Use 0 for outline-only highlighting.', 'wp-3d-showcase'); ?>
+            </p>
+        </div>
+        <?php
     }
 
     public function render_isolate_dim_opacity_field(): void
@@ -287,13 +330,14 @@ class SettingsPage
     }
 
     /**
-     * @return array{selectionHighlightColor: string, hoverHighlightColor: string, isolateDimOpacity: float}
+     * @return array{selectionHighlightColor: string, hoverHighlightColor: string, selectionGlowIntensity: float, isolateDimOpacity: float}
      */
     public function get_interaction_settings(): array
     {
         return [
             'selectionHighlightColor' => $this->get_selection_highlight_color(),
             'hoverHighlightColor' => $this->get_hover_highlight_color(),
+            'selectionGlowIntensity' => $this->get_selection_glow_intensity(),
             'isolateDimOpacity' => $this->get_isolate_dim_opacity(),
         ];
     }
@@ -313,6 +357,14 @@ class SettingsPage
         }
 
         return $sanitized;
+    }
+
+    private function sanitize_unit_interval_setting($value, float $fallback): float
+    {
+        $parsed = is_numeric($value) ? (float) $value : $fallback;
+        $parsed = max(0, min(1, $parsed));
+
+        return round($parsed, 2);
     }
 
     private function render_color_field(string $optionName, string $value, string $description): void
@@ -345,12 +397,18 @@ class SettingsPage
             ?: self::DEFAULT_HOVER_HIGHLIGHT_COLOR;
     }
 
+    private function get_selection_glow_intensity(): float
+    {
+        $value = get_option(self::OPTION_SELECTION_GLOW_INTENSITY, self::DEFAULT_SELECTION_GLOW_INTENSITY);
+
+        return $this->sanitize_unit_interval_setting($value, self::DEFAULT_SELECTION_GLOW_INTENSITY);
+    }
+
     private function get_isolate_dim_opacity(): float
     {
         $value = get_option(self::OPTION_ISOLATE_DIM_OPACITY, self::DEFAULT_ISOLATE_DIM_OPACITY);
-        $opacity = is_numeric($value) ? (float) $value : self::DEFAULT_ISOLATE_DIM_OPACITY;
 
-        return max(0, min(1, round($opacity, 2)));
+        return $this->sanitize_unit_interval_setting($value, self::DEFAULT_ISOLATE_DIM_OPACITY);
     }
 
     private function is_current_upload_for_hdr(): bool

@@ -15,6 +15,7 @@ class WP3DSViewer {
     this.hdriMapUrl = root.dataset.hdriMapUrl || ''
     this.selectionHighlightColor = this.parseColorValue(root.dataset.selectionHighlightColor, 0x2f6df6)
     this.hoverHighlightColor = this.parseColorValue(root.dataset.hoverHighlightColor, 0x333333)
+    this.selectionGlowIntensity = this.parseOpacityValue(root.dataset.selectionGlowIntensity, 0.22)
     this.explodePartsSettings = this.parseExplodeParts(root.dataset.explodeParts || '[]')
 
     this.scene = null
@@ -36,6 +37,7 @@ class WP3DSViewer {
     this.isolateMode = false
     this.selected = null
     this.materialStates = new Map()
+    this.selectionOutlineMap = new Map()
     this.isolateDimOpacity = this.parseOpacityValue(root.dataset.isolateDimOpacity, 0.18)
 
     this.partModal = root.querySelector('[data-part-modal]')
@@ -304,6 +306,7 @@ class WP3DSViewer {
         transparent: material.transparent,
         depthWrite: material.depthWrite,
         emissive: material.emissive ? material.emissive.getHex() : null,
+        emissiveIntensity: typeof material.emissiveIntensity === 'number' ? material.emissiveIntensity : null,
       })
     })
 
@@ -333,6 +336,9 @@ class WP3DSViewer {
       if (material.emissive && state.emissive !== null) {
         material.emissive.setHex(state.emissive)
       }
+      if (typeof material.emissiveIntensity === 'number' && state.emissiveIntensity !== null) {
+        material.emissiveIntensity = state.emissiveIntensity
+      }
       material.needsUpdate = true
     })
   }
@@ -346,18 +352,74 @@ class WP3DSViewer {
     })
   }
 
+  removeSelectionOutline(mesh) {
+    const outline = this.selectionOutlineMap.get(mesh.uuid)
+
+    if (!outline) {
+      return
+    }
+
+    mesh.remove(outline.group)
+    outline.geometry.dispose()
+    outline.material.dispose()
+    outline.glowMaterial.dispose()
+    this.selectionOutlineMap.delete(mesh.uuid)
+  }
+
   setSelectionHighlight(mesh, active) {
+    this.removeSelectionOutline(mesh)
+
     this.forEachMaterial(mesh, (material) => {
       if (material.emissive) {
-        material.emissive.setHex(active ? this.selectionHighlightColor : 0x000000)
+        material.emissive.setHex(0x000000)
+      }
+      if (typeof material.emissiveIntensity === 'number') {
+        material.emissiveIntensity = 1
       }
       material.needsUpdate = true
     })
+
+    if (!active) {
+      return
+    }
+
+    const geometry = new THREE.EdgesGeometry(mesh.geometry, 30)
+    const material = new THREE.LineBasicMaterial({
+      color: this.selectionHighlightColor,
+      transparent: true,
+      opacity: 1,
+      depthTest: true,
+      depthWrite: false,
+    })
+    const glowMaterial = new THREE.LineBasicMaterial({
+      color: this.selectionHighlightColor,
+      transparent: true,
+      opacity: this.selectionGlowIntensity,
+      depthTest: true,
+      depthWrite: false,
+    })
+
+    const outline = new THREE.LineSegments(geometry, material)
+    outline.renderOrder = 10
+
+    const glow = new THREE.LineSegments(geometry, glowMaterial)
+    glow.scale.setScalar(1.012)
+    glow.renderOrder = 9
+
+    const group = new THREE.Group()
+    group.name = 'wp3ds-selection-outline'
+    group.add(glow)
+    group.add(outline)
+    group.raycast = () => {}
+
+    mesh.add(group)
+    this.selectionOutlineMap.set(mesh.uuid, { group, geometry, material, glowMaterial })
   }
 
   applyIsolationState() {
     this.meshParts.forEach((mesh) => {
       mesh.visible = true
+      this.removeSelectionOutline(mesh)
       this.restoreMaterialState(mesh)
 
       if (mesh === this.selected) {
@@ -561,6 +623,10 @@ class WP3DSViewer {
       if (material.emissive) {
         material.emissive.setHex(this.hoverHighlightColor)
       }
+      if (typeof material.emissiveIntensity === 'number') {
+        material.emissiveIntensity = 0.35
+      }
+      material.needsUpdate = true
     })
   }
 
@@ -574,6 +640,10 @@ class WP3DSViewer {
       if (material.emissive) {
         material.emissive.setHex(0x000000)
       }
+      if (typeof material.emissiveIntensity === 'number') {
+        material.emissiveIntensity = 1
+      }
+      material.needsUpdate = true
     })
   }
 
