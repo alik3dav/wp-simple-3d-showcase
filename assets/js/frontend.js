@@ -462,7 +462,7 @@ class WP3DSViewer {
     this.applyIsolationState()
   }
 
-  onClick(event) {
+  onDoubleClick(event) {
     const rect = this.canvas.getBoundingClientRect()
     this.pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1
     this.pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1
@@ -612,7 +612,7 @@ class WP3DSViewer {
     })
 
     this.canvas.addEventListener('pointermove', (e) => this.onPointerMove(e))
-    this.canvas.addEventListener('click', (e) => this.onClick(e))
+    this.canvas.addEventListener('dblclick', (e) => this.onDoubleClick(e))
   }
 
   hideLoading() {
