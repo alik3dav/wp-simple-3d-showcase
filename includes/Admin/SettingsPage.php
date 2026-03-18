@@ -8,6 +8,8 @@ defined('ABSPATH') || exit;
 class SettingsPage
 {
     private const OPTION_HDRI_MAP = 'wp3ds_hdri_map_url';
+    private const HDR_EXTENSION = 'hdr';
+    private const HDR_MIME_TYPE = 'application/octet-stream';
 
     public function hooks(): void
     {
@@ -69,7 +71,7 @@ class SettingsPage
         $path = wp_parse_url($url, PHP_URL_PATH);
         $extension = is_string($path) ? strtolower((string) pathinfo($path, PATHINFO_EXTENSION)) : '';
 
-        if ($extension !== 'hdr') {
+        if ($extension !== self::HDR_EXTENSION) {
             add_settings_error(
                 'wp3ds_settings',
                 'wp3ds_invalid_hdri',
@@ -129,20 +131,26 @@ class SettingsPage
 
     public function allow_hdr_uploads(array $mimes): array
     {
-        $mimes['hdr'] = 'image/vnd.radiance';
+        if (!$this->is_current_upload_for_hdr()) {
+            return $mimes;
+        }
+
+        $mimes[self::HDR_EXTENSION] = self::HDR_MIME_TYPE;
 
         return $mimes;
     }
 
-    public function fix_hdr_filetype(array $data, string $file, string $filename, array $mimes, $real_mime): array
+    public function fix_hdr_filetype(array $data, string $file, string $filename, ?array $mimes, $real_mime): array
     {
         $extension = strtolower((string) pathinfo($filename, PATHINFO_EXTENSION));
 
-        if ($extension === 'hdr') {
-            $data['ext'] = 'hdr';
-            $data['type'] = 'image/vnd.radiance';
-            $data['proper_filename'] = $filename;
+        if ($extension !== self::HDR_EXTENSION) {
+            return $data;
         }
+
+        $data['ext'] = self::HDR_EXTENSION;
+        $data['type'] = self::HDR_MIME_TYPE;
+        $data['proper_filename'] = $filename;
 
         return $data;
     }
@@ -150,5 +158,36 @@ class SettingsPage
     public function get_hdri_map_url(): string
     {
         return (string) get_option(self::OPTION_HDRI_MAP, '');
+    }
+
+    private function is_current_upload_for_hdr(): bool
+    {
+        return in_array(self::HDR_EXTENSION, $this->get_uploaded_file_extensions($_FILES ?? []), true);
+    }
+
+    /**
+     * @param array<string, mixed> $files
+     * @return string[]
+     */
+    private function get_uploaded_file_extensions(array $files): array
+    {
+        $extensions = [];
+
+        array_walk_recursive(
+            $files,
+            static function ($value, $key) use (&$extensions): void {
+                if ($key !== 'name' || !is_string($value)) {
+                    return;
+                }
+
+                $extension = strtolower((string) pathinfo($value, PATHINFO_EXTENSION));
+
+                if ($extension !== '') {
+                    $extensions[] = $extension;
+                }
+            }
+        );
+
+        return array_values(array_unique($extensions));
     }
 }
