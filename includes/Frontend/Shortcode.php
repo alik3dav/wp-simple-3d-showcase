@@ -65,12 +65,13 @@ class Shortcode
         data-auto-rotate="<?php echo esc_attr($auto_rotate ? 'true' : 'false'); ?>"
         data-explode-step="<?php echo esc_attr($explode_step); ?>"
     >
-        <div class="wp3ds-toolbar">
+       <div class="wp3ds-toolbar">
             <button type="button" data-action="reset">Reset</button>
             <button type="button" data-action="autorotate">Auto Rotate</button>
             <button type="button" data-action="explode">Explode</button>
+            <button type="button" data-action="isolate">Isolate</button>
             <button type="button" data-action="fullscreen">Fullscreen</button>
-        </div>
+       </div>
 
         <div class="wp3ds-canvas-wrap">
             <canvas></canvas>

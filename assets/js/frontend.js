@@ -24,6 +24,9 @@ class WP3DSViewer {
     this.pointer = new THREE.Vector2()
     this.hovered = null
 
+    this.isolateMode = false
+    this.selected = null
+
     this.init()
   }
 
@@ -141,6 +144,8 @@ class WP3DSViewer {
     this.controls.update()
   }
 
+  
+
   explode() {
     if (!this.model) return
 
@@ -166,6 +171,54 @@ class WP3DSViewer {
       this.isExploded = false
     }
   }
+
+toggleIsolateMode() {
+  this.isolateMode = !this.isolateMode
+
+  if (!this.isolateMode) {
+    this.meshParts.forEach(mesh => {
+      mesh.visible = true
+    })
+    this.selected = null
+  }
+}
+
+onClick(event) {
+  const rect = this.canvas.getBoundingClientRect()
+  this.pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1
+  this.pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1
+
+  this.raycaster.setFromCamera(this.pointer, this.camera)
+  const intersects = this.raycaster.intersectObjects(this.meshParts, true)
+
+  if (!intersects.length) return
+
+  const obj = intersects[0].object
+
+  if (this.isolateMode) {
+    this.selected = obj
+
+    this.meshParts.forEach(mesh => {
+      mesh.visible = (mesh === obj)
+    })
+
+    this.focusObject(obj)
+  }
+}
+
+focusObject(obj) {
+  const box = new THREE.Box3().setFromObject(obj)
+  const center = box.getCenter(new THREE.Vector3())
+  const size = box.getSize(new THREE.Vector3())
+
+  const maxDim = Math.max(size.x, size.y, size.z)
+  const distance = Math.max(maxDim * 2, 1)
+
+  this.camera.position.copy(center.clone().add(new THREE.Vector3(0, 0, distance)))
+  this.controls.target.copy(center)
+  this.controls.update()
+}
+
 
   resetView() {
     this.controls.reset()
@@ -218,6 +271,10 @@ class WP3DSViewer {
   }
 
   bindUI() {
+    this.root.querySelector('[data-action="isolate"]')?.addEventListener('click', () => {
+      this.toggleIsolateMode()
+    })
+
     this.root.querySelector('[data-action="reset"]')?.addEventListener('click', () => {
       this.resetView()
     })
@@ -236,6 +293,8 @@ class WP3DSViewer {
   }
 
   bindEvents() {
+    
+
     window.addEventListener('resize', () => {
       const width = this.root.clientWidth || 800
       const wrap = this.root.querySelector('.wp3ds-canvas-wrap')
@@ -247,6 +306,7 @@ class WP3DSViewer {
     })
 
     this.canvas.addEventListener('pointermove', (e) => this.onPointerMove(e))
+    this.canvas.addEventListener('click', (e) => this.onClick(e))
   }
 
   hideLoading() {

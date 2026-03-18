@@ -8,25 +8,42 @@
 }
 
 .wp3ds-toolbar {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 5;
   display: flex;
   gap: 8px;
-  padding: 12px;
-  border-bottom: 1px solid #e5e7eb;
-  background: #ffffff;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(229, 231, 235, 0.9);
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
 }
 
 .wp3ds-toolbar button {
   appearance: none;
   border: 1px solid #d1d5db;
-  background: #fff;
+  background: #ffffff;
+  color: #111827;
   border-radius: 10px;
   padding: 8px 12px;
   cursor: pointer;
   font-size: 13px;
+  line-height: 1;
+  transition: all 0.18s ease;
 }
 
 .wp3ds-toolbar button:hover {
   background: #f9fafb;
+  border-color: #9ca3af;
+  transform: translateY(-1px);
+}
+
+.wp3ds-toolbar button:active {
+  transform: translateY(0);
 }
 
 .wp3ds-canvas-wrap {
