@@ -45,7 +45,10 @@ class Shortcode
         $auto_rotate   = get_post_meta($post_id, '_wp3ds_auto_rotate', true) === '1';
         $explode_step  = get_post_meta($post_id, '_wp3ds_explode_step', true) ?: '0.15';
         $explode_parts = get_post_meta($post_id, '_wp3ds_explode_parts', true) ?: '[]';
-        $hdri_map_url  = get_option('wp3ds_hdri_map_url', '');
+
+        $settings_page = new \WP3DS\Admin\SettingsPage();
+        $hdri_map_url = $settings_page->get_hdri_map_url();
+        $interaction_settings = $settings_page->get_interaction_settings();
 
         if (!$model_url) {
             return '<p>No GLB file assigned.</p>';
@@ -65,6 +68,9 @@ class Shortcode
             data-explode-step="<?php echo esc_attr($explode_step); ?>"
             data-explode-parts="<?php echo esc_attr($explode_parts); ?>"
             data-hdri-map-url="<?php echo esc_url($hdri_map_url); ?>"
+            data-selection-highlight-color="<?php echo esc_attr($interaction_settings['selectionHighlightColor']); ?>"
+            data-hover-highlight-color="<?php echo esc_attr($interaction_settings['hoverHighlightColor']); ?>"
+            data-isolate-dim-opacity="<?php echo esc_attr((string) $interaction_settings['isolateDimOpacity']); ?>"
         >
             <div class="wp3ds-toolbar" aria-label="3D viewer controls">
                 <button type="button" data-action="reset" aria-label="Reset view">Reset</button>

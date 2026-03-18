@@ -13,6 +13,8 @@ class WP3DSViewer {
     this.autoRotate = root.dataset.autoRotate === 'true'
     this.explodeStep = parseFloat(root.dataset.explodeStep || '0.15')
     this.hdriMapUrl = root.dataset.hdriMapUrl || ''
+    this.selectionHighlightColor = this.parseColorValue(root.dataset.selectionHighlightColor, 0x2f6df6)
+    this.hoverHighlightColor = this.parseColorValue(root.dataset.hoverHighlightColor, 0x333333)
     this.explodePartsSettings = this.parseExplodeParts(root.dataset.explodeParts || '[]')
 
     this.scene = null
@@ -34,7 +36,7 @@ class WP3DSViewer {
     this.isolateMode = false
     this.selected = null
     this.materialStates = new Map()
-    this.isolateDimOpacity = 0.18
+    this.isolateDimOpacity = this.parseOpacityValue(root.dataset.isolateDimOpacity, 0.18)
 
     this.partModal = root.querySelector('[data-part-modal]')
     this.partTitleEl = root.querySelector('[data-part-title]')
@@ -87,6 +89,34 @@ class WP3DSViewer {
     }
 
     return `${segments.join(' / ')}#${fallbackIndex}`
+  }
+
+  parseColorValue(value, fallback) {
+    if (typeof value !== 'string') {
+      return fallback
+    }
+
+    const normalized = value.trim().replace(/^#/, '')
+
+    if (!/^[0-9a-fA-F]{3}([0-9a-fA-F]{3})?$/.test(normalized)) {
+      return fallback
+    }
+
+    const expanded = normalized.length === 3
+      ? normalized.split('').map((char) => `${char}${char}`).join('')
+      : normalized
+
+    return Number.parseInt(expanded, 16)
+  }
+
+  parseOpacityValue(value, fallback) {
+    const parsed = Number.parseFloat(value || '')
+
+    if (Number.isNaN(parsed)) {
+      return fallback
+    }
+
+    return Math.min(Math.max(parsed, 0), 1)
   }
 
   init() {
@@ -319,7 +349,7 @@ class WP3DSViewer {
   setSelectionHighlight(mesh, active) {
     this.forEachMaterial(mesh, (material) => {
       if (material.emissive) {
-        material.emissive.setHex(active ? 0x2f6df6 : 0x000000)
+        material.emissive.setHex(active ? this.selectionHighlightColor : 0x000000)
       }
       material.needsUpdate = true
     })
@@ -529,7 +559,7 @@ class WP3DSViewer {
 
     this.forEachMaterial(mesh, (material) => {
       if (material.emissive) {
-        material.emissive.setHex(0x333333)
+        material.emissive.setHex(this.hoverHighlightColor)
       }
     })
   }
