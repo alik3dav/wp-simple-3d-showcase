@@ -40,9 +40,9 @@ class Shortcode
             return '<p>Invalid 3D item.</p>';
         }
 
-        $model_url    = get_post_meta($post_id, '_wp3ds_model_url', true);
-        $bg_color     = get_post_meta($post_id, '_wp3ds_bg_color', true) ?: '#f5f5f5';
-        $auto_rotate  = get_post_meta($post_id, '_wp3ds_auto_rotate', true) === '1';
+        $model_url     = get_post_meta($post_id, '_wp3ds_model_url', true);
+        $bg_color      = get_post_meta($post_id, '_wp3ds_bg_color', true) ?: '#f5f5f5';
+        $auto_rotate   = get_post_meta($post_id, '_wp3ds_auto_rotate', true) === '1';
         $explode_step  = get_post_meta($post_id, '_wp3ds_explode_step', true) ?: '0.15';
         $explode_parts = get_post_meta($post_id, '_wp3ds_explode_parts', true) ?: '[]';
         $hdri_map_url  = get_option('wp3ds_hdri_map_url', '');
@@ -66,17 +66,33 @@ class Shortcode
             data-explode-parts="<?php echo esc_attr($explode_parts); ?>"
             data-hdri-map-url="<?php echo esc_url($hdri_map_url); ?>"
         >
-            <div class="wp3ds-toolbar">
-                <button type="button" data-action="reset">Reset</button>
-                <button type="button" data-action="autorotate">Auto Rotate</button>
-                <button type="button" data-action="explode">Explode</button>
-                <button type="button" data-action="isolate">Isolate</button>
-                <button type="button" data-action="fullscreen">Fullscreen</button>
+            <div class="wp3ds-toolbar" aria-label="3D viewer controls">
+                <button type="button" data-action="reset" aria-label="Reset view">Reset</button>
+                <button type="button" data-action="autorotate" aria-label="Toggle auto rotation">Rotate</button>
+                <button type="button" data-action="explode" aria-label="Toggle explode view">Explode</button>
+                <button type="button" data-action="isolate" aria-label="Toggle isolate mode">Focus</button>
+                <button type="button" data-action="fullscreen" aria-label="Toggle fullscreen">Full</button>
             </div>
 
             <div class="wp3ds-canvas-wrap">
                 <canvas></canvas>
                 <div class="wp3ds-loading">Loading 3D model…</div>
+                <div class="wp3ds-part-modal" data-part-modal hidden>
+                    <button type="button" class="wp3ds-part-modal__close" data-action="close-part-modal" aria-label="Close part details">×</button>
+                    <div class="wp3ds-part-modal__eyebrow">Part details</div>
+                    <h3 class="wp3ds-part-modal__title" data-part-title>Select a part</h3>
+                    <p class="wp3ds-part-modal__description" data-part-description>Click any object in the model to open a compact info card with its details.</p>
+                    <div class="wp3ds-part-modal__meta">
+                        <div class="wp3ds-part-modal__section" data-part-characteristics-section hidden>
+                            <div class="wp3ds-part-modal__label">Characteristics</div>
+                            <ul class="wp3ds-part-modal__list" data-part-characteristics></ul>
+                        </div>
+                        <div class="wp3ds-part-modal__section">
+                            <div class="wp3ds-part-modal__label">Mesh key</div>
+                            <code class="wp3ds-part-modal__code" data-part-key>—</code>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
         <?php

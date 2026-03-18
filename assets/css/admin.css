@@ -7,6 +7,11 @@
   max-width: 520px;
 }
 
+.wp3ds-admin-fields textarea {
+  width: 100%;
+  min-width: 220px;
+}
+
 .wp3ds-explode-parts {
   margin-top: 24px;
   border-top: 1px solid #dcdcde;
@@ -26,11 +31,21 @@
   overflow-x: auto;
 }
 
+.wp3ds-parts-table {
+  min-width: 980px;
+}
+
 .wp3ds-parts-table th,
 .wp3ds-parts-table td {
   vertical-align: top;
 }
 
 .wp3ds-parts-table .description {
+  margin-top: 6px;
   word-break: break-word;
+}
+
+.wp3ds-parts-table .regular-text {
+  width: 100%;
+  min-width: 200px;
 }
