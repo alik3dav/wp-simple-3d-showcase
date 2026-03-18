@@ -33,6 +33,8 @@ class WP3DSViewer {
 
     this.isolateMode = false
     this.selected = null
+    this.materialStates = new Map()
+    this.isolateDimOpacity = 0.18
 
     this.init()
   }
@@ -206,11 +208,17 @@ class WP3DSViewer {
         this.originalPositions.set(child.uuid, child.position.clone())
 
         if (child.material) {
-          child.material = child.material.clone()
+          child.material = Array.isArray(child.material)
+            ? child.material.map((material) => material.clone())
+            : child.material.clone()
+
+          this.storeMaterialState(child)
 
           if (this.environmentMap) {
-            child.material.envMap = this.environmentMap
-            child.material.needsUpdate = true
+            this.forEachMaterial(child, (material) => {
+              material.envMap = this.environmentMap
+              material.needsUpdate = true
+            })
           }
         }
       }
@@ -246,6 +254,77 @@ class WP3DSViewer {
         : defaultDirection
 
       this.explodeTargets.set(mesh.uuid, original.clone().add(direction.multiplyScalar(this.explodeStep)))
+    })
+  }
+
+  forEachMaterial(mesh, callback) {
+    const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
+
+    materials.filter(Boolean).forEach(callback)
+  }
+
+  storeMaterialState(mesh) {
+    const states = []
+
+    this.forEachMaterial(mesh, (material) => {
+      states.push({
+        opacity: material.opacity,
+        transparent: material.transparent,
+        depthWrite: material.depthWrite,
+      })
+    })
+
+    this.materialStates.set(mesh.uuid, states)
+  }
+
+  restoreMaterialState(mesh) {
+    const states = this.materialStates.get(mesh.uuid)
+
+    if (!states) {
+      return
+    }
+
+    let index = 0
+
+    this.forEachMaterial(mesh, (material) => {
+      const state = states[index]
+      index += 1
+
+      if (!state) {
+        return
+      }
+
+      material.opacity = state.opacity
+      material.transparent = state.transparent
+      material.depthWrite = state.depthWrite
+      material.needsUpdate = true
+    })
+  }
+
+  setMeshOpacity(mesh, opacity) {
+    this.forEachMaterial(mesh, (material) => {
+      material.opacity = opacity
+      material.transparent = opacity < 1 || material.transparent
+      material.depthWrite = opacity >= 1
+      material.needsUpdate = true
+    })
+  }
+
+  applyIsolationState() {
+    this.meshParts.forEach((mesh) => {
+      mesh.visible = true
+
+      if (!this.isolateMode || !this.selected) {
+        this.restoreMaterialState(mesh)
+        return
+      }
+
+      if (mesh === this.selected) {
+        this.restoreMaterialState(mesh)
+        return
+      }
+
+      this.setMeshOpacity(mesh, this.isolateDimOpacity)
     })
   }
 
@@ -292,11 +371,10 @@ class WP3DSViewer {
     this.isolateMode = !this.isolateMode
 
     if (!this.isolateMode) {
-      this.meshParts.forEach((mesh) => {
-        mesh.visible = true
-      })
       this.selected = null
     }
+
+    this.applyIsolationState()
   }
 
   onClick(event) {
@@ -313,26 +391,8 @@ class WP3DSViewer {
 
     if (this.isolateMode) {
       this.selected = obj
-
-      this.meshParts.forEach((mesh) => {
-        mesh.visible = mesh === obj
-      })
-
-      this.focusObject(obj)
+      this.applyIsolationState()
     }
-  }
-
-  focusObject(obj) {
-    const box = new THREE.Box3().setFromObject(obj)
-    const center = box.getCenter(new THREE.Vector3())
-    const size = box.getSize(new THREE.Vector3())
-
-    const maxDim = Math.max(size.x, size.y, size.z)
-    const distance = Math.max(maxDim * 2, 1)
-
-    this.camera.position.copy(center.clone().add(new THREE.Vector3(0, 0, distance)))
-    this.controls.target.copy(center)
-    this.controls.update()
   }
 
   resetView() {
