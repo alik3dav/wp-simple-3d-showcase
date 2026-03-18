@@ -1,14 +1,53 @@
-.s3ds-viewer{position:relative;width:100%;background:var(--s3ds-bg,#dbdbdb);border-radius:16px;overflow:hidden}
-.s3ds-viewer model-viewer{display:block;width:100%;height:var(--s3ds-height,600px);background:var(--s3ds-bg,#dbdbdb)}
-.s3ds-controls{position:absolute;right:16px;bottom:16px;display:flex;gap:8px;z-index:5}
-.s3ds-btn{border:0;border-radius:999px;padding:10px 14px;cursor:pointer;background:rgba(0,0,0,.82);color:#fff;font-size:13px}
-.s3ds-btn:focus-visible{outline:2px solid #fff;outline-offset:2px}
-.s3ds-hint{position:absolute;left:16px;bottom:16px;z-index:5;padding:8px 12px;border-radius:999px;background:rgba(219,219,219,.92);font-size:12px}
-.s3ds-brand{position:absolute;left:16px;top:16px;z-index:5;padding:6px 10px;border-radius:6px;background:rgba(255,255,255,.7);font-size:12px;font-weight:600}
-.s3ds-no-model{padding:16px;border:1px solid #ddd}
+.wp3ds-viewer {
+  position: relative;
+  width: 100%;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #fff;
+}
 
-.s3ds-viewer-message{position:absolute;inset:auto 16px 16px 16px;z-index:6;padding:12px;border-radius:10px;background:rgba(0,0,0,.78);color:#fff;font-size:14px}
-.s3ds-viewer.is-loading .s3ds-viewer-message{display:block}
-.s3ds-viewer.is-ready .s3ds-viewer-message{display:none}
-.s3ds-viewer.is-error .s3ds-viewer-message{display:block;background:rgba(130,14,14,.88)}
-.s3ds-viewer.is-error .s3ds-controls,.s3ds-viewer.is-error .s3ds-hint{display:none}
+.wp3ds-toolbar {
+  display: flex;
+  gap: 8px;
+  padding: 12px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #ffffff;
+}
+
+.wp3ds-toolbar button {
+  appearance: none;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  border-radius: 10px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.wp3ds-toolbar button:hover {
+  background: #f9fafb;
+}
+
+.wp3ds-canvas-wrap {
+  position: relative;
+  width: 100%;
+  height: calc(100% - 57px);
+  min-height: 500px;
+}
+
+.wp3ds-canvas-wrap canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.wp3ds-loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(255,255,255,0.85);
+  font-size: 14px;
+  z-index: 2;
+}

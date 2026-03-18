@@ -1,61 +1,37 @@
 <?php
 
-namespace S3DS;
+namespace WP3DS;
 
-use S3DS\Admin\AdminMenu;
-use S3DS\Admin\MetaBoxes;
-use S3DS\Admin\SettingsPage;
-use S3DS\Admin\SettingsRegistry;
-use S3DS\API\RestController;
-use S3DS\Domain\ShowcaseRepository;
-use S3DS\Frontend\AssetLoader;
-use S3DS\Frontend\Shortcode;
-use S3DS\Frontend\ViewerRenderer;
-use S3DS\PostTypes\ShowcasePostType;
+use WP3DS\PostTypes\ShowcasePostType;
+use WP3DS\Admin\MetaBoxes;
+use WP3DS\Admin\AdminAssets;
+use WP3DS\Frontend\Shortcode;
+use WP3DS\Frontend\FrontendAssets;
+use WP3DS\REST\Routes;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined('ABSPATH') || exit;
 
-class Plugin {
-	private $repository;
+class Plugin
+{
+    public function boot(): void
+    {
+        add_action('plugins_loaded', [$this, 'load_textdomain']);
+        add_action('init', [new ShowcasePostType(), 'register']);
+        add_action('init', [new Shortcode(), 'register']);
 
-	public function __construct() {
-		$this->repository = new ShowcaseRepository();
-	}
+        add_action('add_meta_boxes', [new MetaBoxes(), 'register']);
+        add_action('save_post_wp3ds_item', [new MetaBoxes(), 'save']);
 
-	public function boot() {
-		add_action( 'init', array( $this, 'load_textdomain' ) );
-		add_filter( 'upload_mimes', array( $this, 'allow_3d_uploads' ) );
+        add_action('admin_enqueue_scripts', [new AdminAssets(), 'enqueue']);
 
-		$post_type = new ShowcasePostType();
-		$post_type->register();
+        $frontend_assets = new FrontendAssets();
+        $frontend_assets->hooks();
 
-		$asset_loader = new AssetLoader();
-		$renderer     = new ViewerRenderer( $asset_loader );
-		$shortcode    = new Shortcode( $this->repository, $renderer, $asset_loader );
-		$shortcode->register();
+        add_action('rest_api_init', [new Routes(), 'register']);
+    }
 
-		$settings_registry = new SettingsRegistry();
-		$settings_page     = new SettingsPage( $settings_registry );
-		$admin_menu        = new AdminMenu( $settings_page );
-		$meta_boxes        = new MetaBoxes();
-		$rest_controller   = new RestController( $this->repository );
-
-		$settings_registry->register();
-		$admin_menu->register();
-		$meta_boxes->register();
-		$asset_loader->register_admin();
-		$rest_controller->register();
-	}
-
-	public function load_textdomain() {
-		load_plugin_textdomain( 'simple-3d-showcase', false, dirname( S3DS_PLUGIN_BASENAME ) . '/languages' );
-	}
-
-	public function allow_3d_uploads( $mimes ) {
-		$mimes['glb']  = 'model/gltf-binary';
-		$mimes['gltf'] = 'model/gltf+json';
-		return $mimes;
-	}
+    public function load_textdomain(): void
+    {
+        load_plugin_textdomain('wp-3d-showcase', false, dirname(plugin_basename(WP3DS_FILE)) . '/languages');
+    }
 }

@@ -1,204 +1,271 @@
-(function () {
-	var LOAD_TIMEOUT_MS = 20000;
-	var RETRY_DELAY_MS = 800;
+import * as THREE from 'three'
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 
-	function getMessageNode(wrap) {
-		return wrap.querySelector('.s3ds-viewer-message');
-	}
+class WP3DSViewer {
+  constructor(root) {
+    this.root = root
+    this.canvas = root.querySelector('canvas')
+    this.loadingEl = root.querySelector('.wp3ds-loading')
+    this.modelUrl = root.dataset.modelUrl
+    this.bgColor = root.dataset.bgColor || '#f5f5f5'
+    this.autoRotate = root.dataset.autoRotate === 'true'
+    this.explodeStep = parseFloat(root.dataset.explodeStep || '0.15')
 
-	function setViewerState(wrap, state, text) {
-		var message = getMessageNode(wrap);
-		wrap.classList.remove('is-loading', 'is-error', 'is-ready');
-		wrap.classList.add('is-' + state);
-		wrap.dataset.viewerState = state;
+    this.scene = null
+    this.camera = null
+    this.renderer = null
+    this.controls = null
+    this.model = null
+    this.meshParts = []
+    this.originalPositions = new Map()
+    this.isExploded = false
+    this.raycaster = new THREE.Raycaster()
+    this.pointer = new THREE.Vector2()
+    this.hovered = null
 
-		if (!message) return;
+    this.init()
+  }
 
-		if (state === 'error') {
-			message.hidden = false;
-			message.textContent = text || message.dataset.errorText || message.textContent;
-			return;
-		}
+  init() {
+    console.log('WP3DS viewer init', {
+      modelUrl: this.modelUrl,
+      bgColor: this.bgColor,
+      autoRotate: this.autoRotate,
+      explodeStep: this.explodeStep
+    })
 
-		if (state === 'loading') {
-			message.hidden = false;
-			message.textContent = text || message.dataset.loadingText || '';
-			return;
-		}
+    if (!this.modelUrl) {
+      console.error('No model URL found')
+      if (this.loadingEl) {
+        this.loadingEl.textContent = 'No model URL found'
+      }
+      return
+    }
 
-		message.hidden = true;
-	}
+    const width = this.root.clientWidth || 800
+    const wrap = this.root.querySelector('.wp3ds-canvas-wrap')
+    const height = wrap.clientHeight || 500
 
-	function getDebugDetails(wrap, reason, extra) {
-		var viewer = wrap.querySelector('model-viewer');
-		var details = {
-			reason: reason,
-			errorType: (viewer && viewer.dataset.loadErrorType) || wrap.dataset.loadErrorType || '',
-			modelUrl: (viewer && viewer.dataset.modelUrl) || '',
-			viewerState: wrap.dataset.viewerState || 'unknown'
-		};
+    this.scene = new THREE.Scene()
+    this.scene.background = new THREE.Color(this.bgColor)
 
-		if (!details.modelUrl) {
-			details.errorType = 'missing_url';
-		} else if (!/\.(glb|gltf)(\?.*)?(#.*)?$/i.test(details.modelUrl)) {
-			details.errorType = details.errorType || 'invalid_or_unknown_extension';
-		}
+    this.camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 2000)
+    this.camera.position.set(0, 1.5, 4)
 
-		return Object.assign(details, extra || {});
-	}
+    this.renderer = new THREE.WebGLRenderer({
+      canvas: this.canvas,
+      antialias: true,
+      alpha: false,
+    })
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+    this.renderer.setSize(width, height)
 
-	function debugLog(wrap, reason, extra) {
-		if (!window.s3dsFrontend || !window.s3dsFrontend.debug) return;
-		console.warn('[Simple 3D Showcase] Viewer state update.', getDebugDetails(wrap, reason, extra));
-	}
+    const ambient = new THREE.AmbientLight(0xffffff, 1.4)
+    this.scene.add(ambient)
 
-	function initViewer(wrap) {
-		var viewer = wrap.querySelector('model-viewer');
-		if (!viewer) return;
+    const dir = new THREE.DirectionalLight(0xffffff, 1.6)
+    dir.position.set(4, 8, 4)
+    this.scene.add(dir)
 
-		var modelUrl = (viewer.dataset.modelUrl || '').trim();
-		var message = getMessageNode(wrap);
-		var attempt = 0;
-		var loadTimeout = 0;
-		var completed = false;
+    this.controls = new OrbitControls(this.camera, this.canvas)
+    this.controls.enableDamping = true
+    this.controls.autoRotate = this.autoRotate
+    this.controls.autoRotateSpeed = 1.2
 
-		if (message) {
-			message.dataset.errorText = message.textContent;
-			message.dataset.loadingText = message.dataset.loadingText || 'Loading 3D model…';
-		}
+    this.loadModel()
+    this.bindUI()
+    this.bindEvents()
+    this.animate()
+  }
 
-		function clearTimer() {
-			if (loadTimeout) {
-				clearTimeout(loadTimeout);
-				loadTimeout = 0;
-			}
-		}
+  loadModel() {
+    const loader = new GLTFLoader()
 
-		function startTimer() {
-			clearTimer();
-			loadTimeout = window.setTimeout(function () {
-				if (completed) return;
-				handleFailure('load_timeout', { attempt: attempt, timeoutMs: LOAD_TIMEOUT_MS });
-			}, LOAD_TIMEOUT_MS);
-		}
+    loader.load(
+      this.modelUrl,
+      (gltf) => {
+        this.model = gltf.scene
+        this.scene.add(this.model)
 
-		function handleSuccess(extra) {
-			if (completed) return;
-			completed = true;
-			clearTimer();
-			viewer.dataset.loadErrorType = '';
-			setViewerState(wrap, 'ready');
-			debugLog(wrap, 'model_loaded', extra);
-		}
+        this.collectParts()
+        this.centerAndFitModel()
+        this.hideLoading()
 
-		function retryLoad() {
-			attempt += 1;
-			setViewerState(wrap, 'loading');
-			startTimer();
-			viewer.removeAttribute('src');
-			window.setTimeout(function () {
-				var retryUrl = modelUrl;
-				if (attempt > 1) {
-					retryUrl += (modelUrl.indexOf('?') === -1 ? '?' : '&') + '_s3ds_retry=' + Date.now();
-				}
-				viewer.setAttribute('src', retryUrl);
-				debugLog(wrap, 'retry_started', { attempt: attempt, src: retryUrl });
-			}, RETRY_DELAY_MS);
-		}
+        console.log('GLB model loaded successfully:', this.modelUrl)
+      },
+      (progress) => {
+        if (progress.total) {
+          const percent = Math.round((progress.loaded / progress.total) * 100)
+          if (this.loadingEl) {
+            this.loadingEl.textContent = `Loading 3D model… ${percent}%`
+          }
+        }
+      },
+      (error) => {
+        console.error('Failed to load GLB model:', error)
+        if (this.loadingEl) {
+          this.loadingEl.textContent = 'Failed to load model'
+        }
+      }
+    )
+  }
 
-		function handleFailure(reason, extra) {
-			if (completed) return;
+  collectParts() {
+    this.meshParts = []
 
-			if (attempt < 2) {
-				debugLog(wrap, reason + '_retrying', extra);
-				retryLoad();
-				return;
-			}
+    this.model.traverse((child) => {
+      if (child.isMesh) {
+        this.meshParts.push(child)
+        this.originalPositions.set(child.uuid, child.position.clone())
 
-			completed = true;
-			clearTimer();
-			wrap.dataset.loadErrorType = wrap.dataset.loadErrorType || reason;
-			setViewerState(wrap, 'error', message ? message.dataset.errorText : 'This 3D model is currently unavailable.');
-			debugLog(wrap, reason + '_final', extra);
-		}
+        if (child.material) {
+          child.material = child.material.clone()
+        }
+      }
+    })
+  }
 
-		if (!modelUrl) {
-			setViewerState(wrap, 'error', message ? message.dataset.errorText : 'This 3D model is currently unavailable.');
-			debugLog(wrap, 'missing_model_url');
-			return;
-		}
+  centerAndFitModel() {
+    const box = new THREE.Box3().setFromObject(this.model)
+    const center = box.getCenter(new THREE.Vector3())
+    const size = box.getSize(new THREE.Vector3())
 
-		if (!viewer.getAttribute('src')) {
-			viewer.setAttribute('src', modelUrl);
-		}
+    this.model.position.sub(center)
 
-		setViewerState(wrap, 'loading');
-		startTimer();
-		attempt = 1;
+    const maxDim = Math.max(size.x, size.y, size.z)
+    const fitDistance = Math.max(maxDim * 1.8, 2)
 
-		viewer.addEventListener('load', function () {
-			handleSuccess({ attempt: attempt });
-		});
+    this.camera.position.set(0, Math.max(maxDim * 0.4, 0.5), fitDistance)
+    this.controls.target.set(0, 0, 0)
+    this.controls.update()
+  }
 
-		viewer.addEventListener('progress', function (event) {
-			if (completed) return;
-			var progress = event && event.detail ? Number(event.detail.totalProgress || 0) : 0;
-			if (progress > 0 && progress < 1) {
-				setViewerState(wrap, 'loading', 'Loading 3D model… ' + Math.round(progress * 100) + '%');
-			}
-		});
+  explode() {
+    if (!this.model) return
 
-		viewer.addEventListener('error', function (event) {
-			handleFailure('model_viewer_error_event', {
-				attempt: attempt,
-				event: event && event.type
-			});
-		});
-	}
+    const box = new THREE.Box3().setFromObject(this.model)
+    const center = box.getCenter(new THREE.Vector3())
 
-	function initializeAllViewers() {
-		document.querySelectorAll('.s3ds-viewer').forEach(initViewer);
-	}
+    if (!this.isExploded) {
+      this.meshParts.forEach((mesh) => {
+        const worldPos = new THREE.Vector3()
+        mesh.getWorldPosition(worldPos)
 
-	// Wait for model-viewer element to be defined
-	if (window.customElements && window.customElements.whenDefined) {
-		window.customElements.whenDefined('model-viewer').then(function() {
-			initializeAllViewers();
-		});
-	} else {
-		// Fallback for browsers without custom elements support
-		window.addEventListener('DOMContentLoaded', initializeAllViewers);
-	}
+        const dir = worldPos.clone().sub(center).normalize()
+        mesh.position.add(dir.multiplyScalar(this.explodeStep))
+      })
+      this.isExploded = true
+    } else {
+      this.meshParts.forEach((mesh) => {
+        const original = this.originalPositions.get(mesh.uuid)
+        if (original) {
+          mesh.position.copy(original)
+        }
+      })
+      this.isExploded = false
+    }
+  }
 
-	document.addEventListener('click', function (event) {
-		var wrap = event.target.closest('.s3ds-viewer');
-		if (!wrap) return;
-		var viewer = wrap.querySelector('model-viewer');
-		if (!viewer) return;
+  resetView() {
+    this.controls.reset()
+    if (this.isExploded) {
+      this.explode()
+    }
+  }
 
-		if (event.target.closest('.js-s3ds-reset')) {
-			viewer.cameraOrbit = '45deg 75deg auto';
-			if (viewer.jumpCameraToGoal) viewer.jumpCameraToGoal();
-		}
+  toggleFullscreen() {
+    if (!document.fullscreenElement) {
+      this.root.requestFullscreen?.()
+    } else {
+      document.exitFullscreen?.()
+    }
+  }
 
-		if (event.target.closest('.js-s3ds-rotate')) {
-			var btn = event.target.closest('.js-s3ds-rotate');
-			var rotating = viewer.hasAttribute('auto-rotate');
-			if (rotating) {
-				viewer.removeAttribute('auto-rotate');
-				btn.textContent = btn.getAttribute('data-label-rotate');
-			} else {
-				viewer.setAttribute('auto-rotate', '');
-				btn.textContent = btn.getAttribute('data-label-pause');
-			}
-		}
+  onPointerMove(event) {
+    const rect = this.canvas.getBoundingClientRect()
+    this.pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1
+    this.pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1
 
-		if (event.target.closest('.js-s3ds-fullscreen')) {
-			if (!document.fullscreenElement && wrap.requestFullscreen) {
-				wrap.requestFullscreen();
-			} else if (document.exitFullscreen) {
-				document.exitFullscreen();
-			}
-		}
-	});
-})();
+    this.raycaster.setFromCamera(this.pointer, this.camera)
+    const intersects = this.raycaster.intersectObjects(this.meshParts, true)
+
+    if (this.hovered && (!intersects.length || this.hovered !== intersects[0].object)) {
+      this.clearHover(this.hovered)
+      this.hovered = null
+    }
+
+    if (intersects.length) {
+      const obj = intersects[0].object
+      if (this.hovered !== obj) {
+        if (this.hovered) this.clearHover(this.hovered)
+        this.hovered = obj
+        this.applyHover(obj)
+      }
+    }
+  }
+
+  applyHover(mesh) {
+    if (mesh.material && mesh.material.emissive) {
+      mesh.material.emissive.setHex(0x333333)
+    }
+  }
+
+  clearHover(mesh) {
+    if (mesh.material && mesh.material.emissive) {
+      mesh.material.emissive.setHex(0x000000)
+    }
+  }
+
+  bindUI() {
+    this.root.querySelector('[data-action="reset"]')?.addEventListener('click', () => {
+      this.resetView()
+    })
+
+    this.root.querySelector('[data-action="autorotate"]')?.addEventListener('click', () => {
+      this.controls.autoRotate = !this.controls.autoRotate
+    })
+
+    this.root.querySelector('[data-action="explode"]')?.addEventListener('click', () => {
+      this.explode()
+    })
+
+    this.root.querySelector('[data-action="fullscreen"]')?.addEventListener('click', () => {
+      this.toggleFullscreen()
+    })
+  }
+
+  bindEvents() {
+    window.addEventListener('resize', () => {
+      const width = this.root.clientWidth || 800
+      const wrap = this.root.querySelector('.wp3ds-canvas-wrap')
+      const height = wrap.clientHeight || 500
+
+      this.camera.aspect = width / height
+      this.camera.updateProjectionMatrix()
+      this.renderer.setSize(width, height)
+    })
+
+    this.canvas.addEventListener('pointermove', (e) => this.onPointerMove(e))
+  }
+
+  hideLoading() {
+    if (this.loadingEl) {
+      this.loadingEl.style.display = 'none'
+    }
+  }
+
+  animate() {
+    requestAnimationFrame(() => this.animate())
+    if (this.controls) this.controls.update()
+    if (this.renderer && this.scene && this.camera) {
+      this.renderer.render(this.scene, this.camera)
+    }
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.wp3ds-viewer').forEach((root) => {
+    new WP3DSViewer(root)
+  })
+})

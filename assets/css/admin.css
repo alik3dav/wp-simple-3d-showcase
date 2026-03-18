@@ -1,2 +1,8 @@
-.s3ds-meta-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
-.s3ds-admin-wrap .form-table th{width:260px}
+.wp3ds-admin-fields p {
+  margin-bottom: 16px;
+}
+
+.wp3ds-admin-fields input[type="text"],
+.wp3ds-admin-fields input[type="number"] {
+  max-width: 520px;
+}

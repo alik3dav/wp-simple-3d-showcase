@@ -1,102 +1,84 @@
 <?php
 
-namespace S3DS\Frontend;
+namespace WP3DS\Frontend;
 
-use S3DS\Domain\ShowcaseRepository;
-use S3DS\Helpers;
+defined('ABSPATH') || exit;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
+class Shortcode
+{
+    public function register(): void
+    {
+        add_shortcode('wp3ds_viewer', [$this, 'render']);
+    }
+    public function render(array $atts = []): string
+{
+    $atts = shortcode_atts([
+        'id'     => 0,
+        'slug'   => '',
+        'height' => '600px',
+    ], $atts, 'wp3ds_viewer');
+
+    $post_id = 0;
+
+    // 1. ID
+    if (!empty($atts['id'])) {
+        $post_id = absint($atts['id']);
+    }
+
+    // 2. Slug fallback
+    if (!$post_id && !empty($atts['slug'])) {
+        $post = get_page_by_path(sanitize_title($atts['slug']), OBJECT, 'wp3ds_item');
+        if ($post) {
+            $post_id = $post->ID;
+        }
+    }
+
+    // 3. Current post fallback
+    if (!$post_id && get_post_type() === 'wp3ds_item') {
+        $post_id = get_the_ID();
+    }
+
+    // Validate
+    if (!$post_id || get_post_type($post_id) !== 'wp3ds_item') {
+        return '<p>Invalid 3D item.</p>';
+    }
+
+    $model_url    = get_post_meta($post_id, '_wp3ds_model_url', true);
+    $bg_color     = get_post_meta($post_id, '_wp3ds_bg_color', true) ?: '#f5f5f5';
+    $auto_rotate  = get_post_meta($post_id, '_wp3ds_auto_rotate', true) === '1';
+    $explode_step = get_post_meta($post_id, '_wp3ds_explode_step', true) ?: '0.15';
+
+    if (!$model_url) {
+        return '<p>No GLB file assigned.</p>';
+    }
+
+    wp_enqueue_style('wp3ds-frontend');
+    wp_enqueue_script('wp3ds-frontend');
+
+    ob_start();
+    ?>
+    <div
+        class="wp3ds-viewer"
+        style="height: <?php echo esc_attr($atts['height']); ?>;"
+        data-model-url="<?php echo esc_url($model_url); ?>"
+        data-bg-color="<?php echo esc_attr($bg_color); ?>"
+        data-auto-rotate="<?php echo esc_attr($auto_rotate ? 'true' : 'false'); ?>"
+        data-explode-step="<?php echo esc_attr($explode_step); ?>"
+    >
+        <div class="wp3ds-toolbar">
+            <button type="button" data-action="reset">Reset</button>
+            <button type="button" data-action="autorotate">Auto Rotate</button>
+            <button type="button" data-action="explode">Explode</button>
+            <button type="button" data-action="fullscreen">Fullscreen</button>
+        </div>
+
+        <div class="wp3ds-canvas-wrap">
+            <canvas></canvas>
+            <div class="wp3ds-loading">Loading 3D model…</div>
+        </div>
+    </div>
+    <?php
+    return ob_get_clean();
 }
-
-class Shortcode {
-	private $repository;
-	private $renderer;
-	private $asset_loader;
-
-	public function __construct( ShowcaseRepository $repository, ViewerRenderer $renderer, AssetLoader $asset_loader ) {
-		$this->repository   = $repository;
-		$this->renderer     = $renderer;
-		$this->asset_loader = $asset_loader;
-	}
-
-	public function register() {
-		add_shortcode( 'simple_3d_showcase', array( $this, 'render' ) );
-	}
-
-	public function render( $atts ) {
-		$atts = is_array( $atts ) ? $atts : array();
-
-		$global = Helpers::get_settings();
-		$item   = array();
-
-		if ( ! empty( $atts['id'] ) ) {
-			$model = $this->repository->find( (int) $atts['id'] );
-			if ( $model ) {
-				$item = $model->to_array()['meta'];
-			}
-		}
-
-		$defaults = array(
-			'model_url'         => '',
-			'poster_url'        => '',
-			'height'            => '600px',
-			'background'        => '#dbdbdb',
-			'auto_rotate'       => true,
-			'camera_controls'   => true,
-			'exposure'          => '1',
-			'shadow_intensity'  => '1',
-			'loading'           => 'eager',
-			'hint_text'         => __( 'Drag to rotate', 'simple-3d-showcase' ),
-			'fullscreen_enabled'=> (bool) $global['fullscreen_enabled'],
-			'touch_hint_enabled'=> (bool) $global['touch_hint_enabled'],
-			'brand_label'       => $global['brand_label'],
-			'kiosk_mode'        => (bool) $global['kiosk_mode'],
-			'reset_label'       => __( 'Reset', 'simple-3d-showcase' ),
-			'rotate_label'      => __( 'Rotate', 'simple-3d-showcase' ),
-			'pause_label'       => __( 'Pause', 'simple-3d-showcase' ),
-			'fullscreen_label'  => __( 'Fullscreen', 'simple-3d-showcase' ),
-		);
-
-		$manual_overrides = array();
-		$manual_keys      = array(
-			'model_url',
-			'poster_url',
-			'height',
-			'auto_rotate',
-			'camera_controls',
-			'background',
-			'exposure',
-			'shadow_intensity',
-			'loading',
-		);
-
-		foreach ( $manual_keys as $key ) {
-			if ( isset( $atts[ $key ] ) && '' !== trim( (string) $atts[ $key ] ) ) {
-				$manual_overrides[ $key ] = $atts[ $key ];
-			}
-		}
-
-		$config = array_merge( $defaults, $item, $manual_overrides );
-
-		$config['height']          = Helpers::sanitize_dimension( $config['height'], $defaults['height'] );
-		$config['background']      = sanitize_hex_color( $config['background'] ) ?: $defaults['background'];
-		$config['auto_rotate']     = Helpers::bool_attr( $config['auto_rotate'] );
-		$config['camera_controls'] = Helpers::bool_attr( $config['camera_controls'] );
-		$config['model_url']       = Helpers::normalize_media_url( $config['model_url'] );
-		$config['poster_url']      = Helpers::normalize_media_url( $config['poster_url'] );
-		$config['loading']         = in_array( $config['loading'], array( 'eager', 'lazy', 'auto' ), true ) ? $config['loading'] : 'eager';
-
-		$config['load_error_type']    = '';
-		$config['load_error_message'] = __( 'This 3D model is currently unavailable.', 'simple-3d-showcase' );
-
-		if ( empty( $config['model_url'] ) ) {
-			$config['load_error_type'] = 'missing_url';
-		} elseif ( ! Helpers::is_supported_model_url( $config['model_url'] ) ) {
-			// Keep rendering with the provided source. Frontend loader will validate real load failures.
-			$config['load_error_type'] = 'possible_invalid_file';
-		}
-
-		return $this->renderer->render( $config );
-	}
+    
 }

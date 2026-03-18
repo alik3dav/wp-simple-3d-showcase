@@ -1,36 +1,28 @@
 <?php
 
-namespace S3DS;
+namespace WP3DS;
 
-if ( ! defined( 'ABSPATH' ) ) {
-	exit;
-}
+defined('ABSPATH') || exit;
 
-class Autoloader {
-	private $prefix;
-	private $base_dir;
+class Autoloader
+{
+    public static function register(): void
+    {
+        spl_autoload_register([__CLASS__, 'autoload']);
+    }
 
-	public function __construct( $prefix, $base_dir ) {
-		$this->prefix   = $prefix;
-		$this->base_dir = $base_dir;
-	}
+    public static function autoload(string $class): void
+    {
+        if (strpos($class, 'WP3DS\\') !== 0) {
+            return;
+        }
 
-	public function register() {
-		spl_autoload_register( array( $this, 'autoload' ) );
-	}
+        $relative = str_replace('WP3DS\\', '', $class);
+        $relative = str_replace('\\', '/', $relative);
+        $file = WP3DS_PATH . 'includes/' . $relative . '.php';
 
-	public function autoload( $class ) {
-		$len = strlen( $this->prefix );
-
-		if ( 0 !== strncmp( $this->prefix, $class, $len ) ) {
-			return;
-		}
-
-		$relative_class = substr( $class, $len );
-		$file           = $this->base_dir . str_replace( '\\', '/', $relative_class ) . '.php';
-
-		if ( file_exists( $file ) ) {
-			require_once $file;
-		}
-	}
+        if (file_exists($file)) {
+            require_once $file;
+        }
+    }
 }
