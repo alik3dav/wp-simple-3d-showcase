@@ -245,10 +245,6 @@ class WP3DSViewer {
         ? new THREE.Vector3(configuredDirection.x, configuredDirection.y, configuredDirection.z)
         : defaultDirection
 
-      if (direction.lengthSq() === 0) {
-        direction.copy(defaultDirection)
-      }
-
       this.explodeTargets.set(mesh.uuid, original.clone().add(direction.multiplyScalar(this.explodeStep)))
     })
   }

@@ -61,7 +61,7 @@ class MetaBoxes
                 <input type="hidden" id="wp3ds_explode_parts" name="wp3ds_explode_parts" value="<?php echo esc_attr($explode_parts); ?>">
                 <div class="wp3ds-explode-parts__header">
                     <strong><?php esc_html_e('Explode View Parts', 'wp-3d-showcase'); ?></strong>
-                    <p class="description"><?php esc_html_e('The plugin automatically detects mesh parts from the GLB model and lets you fine-tune the explode direction for each part on the X, Y, and Z axes.', 'wp-3d-showcase'); ?></p>
+                    <p class="description"><?php esc_html_e('The plugin automatically detects mesh parts from the GLB model and lets you fine-tune the explode direction for each part on the X, Y, and Z axes. Set all three axes to 0 to keep a part fixed during explode view.', 'wp-3d-showcase'); ?></p>
                 </div>
                 <div class="wp3ds-explode-parts__status" data-parts-status>
                     <?php esc_html_e('Select or enter a GLB file URL to detect model parts.', 'wp-3d-showcase'); ?>
