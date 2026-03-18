@@ -37,7 +37,7 @@ class WP3DSViewer {
     this.isolateMode = false
     this.selected = null
     this.materialStates = new Map()
-    this.selectionOutlineMap = new Map()
+    this.selectionHighlightMap = new Map()
     this.isolateDimOpacity = this.parseOpacityValue(root.dataset.isolateDimOpacity, 0.18)
 
     this.partModal = root.querySelector('[data-part-modal]')
@@ -352,22 +352,20 @@ class WP3DSViewer {
     })
   }
 
-  removeSelectionOutline(mesh) {
-    const outline = this.selectionOutlineMap.get(mesh.uuid)
+  removeSelectionHighlight(mesh) {
+    const highlight = this.selectionHighlightMap.get(mesh.uuid)
 
-    if (!outline) {
+    if (!highlight) {
       return
     }
 
-    mesh.remove(outline.group)
-    outline.geometry.dispose()
-    outline.material.dispose()
-    outline.glowMaterial.dispose()
-    this.selectionOutlineMap.delete(mesh.uuid)
+    mesh.remove(highlight.shell)
+    highlight.material.dispose()
+    this.selectionHighlightMap.delete(mesh.uuid)
   }
 
   setSelectionHighlight(mesh, active) {
-    this.removeSelectionOutline(mesh)
+    this.removeSelectionHighlight(mesh)
 
     this.forEachMaterial(mesh, (material) => {
       if (material.emissive) {
@@ -379,47 +377,35 @@ class WP3DSViewer {
       material.needsUpdate = true
     })
 
-    if (!active) {
+    if (!active || this.selectionGlowIntensity <= 0) {
       return
     }
 
-    const geometry = new THREE.EdgesGeometry(mesh.geometry, 30)
-    const material = new THREE.LineBasicMaterial({
+    const material = new THREE.MeshBasicMaterial({
       color: this.selectionHighlightColor,
-      transparent: true,
-      opacity: 1,
-      depthTest: true,
-      depthWrite: false,
-    })
-    const glowMaterial = new THREE.LineBasicMaterial({
-      color: this.selectionHighlightColor,
+      side: THREE.BackSide,
       transparent: true,
       opacity: this.selectionGlowIntensity,
       depthTest: true,
       depthWrite: false,
+      fog: false,
+      toneMapped: false,
     })
 
-    const outline = new THREE.LineSegments(geometry, material)
-    outline.renderOrder = 10
+    const shell = new THREE.Mesh(mesh.geometry, material)
+    shell.name = 'wp3ds-selection-silhouette'
+    shell.renderOrder = 9
+    shell.scale.setScalar(1.03)
+    shell.raycast = () => {}
 
-    const glow = new THREE.LineSegments(geometry, glowMaterial)
-    glow.scale.setScalar(1.012)
-    glow.renderOrder = 9
-
-    const group = new THREE.Group()
-    group.name = 'wp3ds-selection-outline'
-    group.add(glow)
-    group.add(outline)
-    group.raycast = () => {}
-
-    mesh.add(group)
-    this.selectionOutlineMap.set(mesh.uuid, { group, geometry, material, glowMaterial })
+    mesh.add(shell)
+    this.selectionHighlightMap.set(mesh.uuid, { shell, material })
   }
 
   applyIsolationState() {
     this.meshParts.forEach((mesh) => {
       mesh.visible = true
-      this.removeSelectionOutline(mesh)
+      this.removeSelectionHighlight(mesh)
       this.restoreMaterialState(mesh)
 
       if (mesh === this.selected) {

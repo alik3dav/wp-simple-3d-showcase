@@ -118,7 +118,7 @@ class SettingsPage
 
         add_settings_field(
             self::OPTION_SELECTION_HIGHLIGHT_COLOR,
-            __('Selected Part Color', 'wp-3d-showcase'),
+            __('Selected Part Silhouette Color', 'wp-3d-showcase'),
             [$this, 'render_selection_highlight_color_field'],
             'wp3ds-settings',
             'wp3ds_interaction_section'
@@ -134,7 +134,7 @@ class SettingsPage
 
         add_settings_field(
             self::OPTION_SELECTION_GLOW_INTENSITY,
-            __('Selection Glow Strength', 'wp-3d-showcase'),
+            __('Selection Silhouette Strength', 'wp-3d-showcase'),
             [$this, 'render_selection_glow_intensity_field'],
             'wp3ds-settings',
             'wp3ds_interaction_section'
@@ -223,7 +223,7 @@ class SettingsPage
         $this->render_color_field(
             self::OPTION_SELECTION_HIGHLIGHT_COLOR,
             $this->get_selection_highlight_color(),
-            __('Outline color used when a part is selected.', 'wp-3d-showcase')
+            __('Camera-view silhouette color used when a part is selected.', 'wp-3d-showcase')
         );
     }
 
@@ -251,7 +251,7 @@ class SettingsPage
                 class="small-text"
             >
             <p class="description">
-                <?php esc_html_e('Controls how strong the outline glow appears. Use 0 for outline-only highlighting.', 'wp-3d-showcase'); ?>
+                <?php esc_html_e('Controls how strong the selected part silhouette appears from the current camera view. Set 0 to disable it.', 'wp-3d-showcase'); ?>
             </p>
         </div>
         <?php
