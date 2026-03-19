@@ -44,6 +44,6 @@ class Plugin {
 	}
 
 	public function load_textdomain(): void {
-		load_plugin_textdomain( 'wp-3d-showcase', false, dirname( plugin_basename( WP3DS_FILE ) ) . '/languages' );
+		load_plugin_textdomain( 'three-d-showcase', false, dirname( plugin_basename( WP3DS_FILE ) ) . '/languages' );
 	}
 }

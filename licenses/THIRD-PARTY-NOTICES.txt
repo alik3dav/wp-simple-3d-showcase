@@ -1,4 +1,4 @@
-WP 3D Showcase bundles the following third-party dependency for its locally built front-end and admin assets:
+3D Showcase bundles the following third-party dependency for its locally built front-end and admin assets:
 
 1. three
    - Project: https://threejs.org/

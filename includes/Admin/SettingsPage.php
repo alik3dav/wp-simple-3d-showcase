@@ -35,8 +35,8 @@ class SettingsPage {
 
 	public function register_menu(): void {
 		add_options_page(
-			__( 'WP 3D Showcase Settings', 'wp-3d-showcase' ),
-			__( 'WP 3D Showcase', 'wp-3d-showcase' ),
+			__( '3D Showcase Settings', 'three-d-showcase' ),
+			__( '3D Showcase', 'three-d-showcase' ),
 			'manage_options',
 			'wp3ds-settings',
 			array( $this, 'render_page' )
@@ -96,16 +96,16 @@ class SettingsPage {
 
 		add_settings_section(
 			'wp3ds_environment_section',
-			__( 'Environment Lighting', 'wp-3d-showcase' ),
+			__( 'Environment Lighting', 'three-d-showcase' ),
 			static function (): void {
-				echo '<p>' . esc_html__( 'Provide an external direct URL to a .hdr environment map. It is applied globally to every 3D viewer.', 'wp-3d-showcase' ) . '</p>';
+				echo '<p>' . esc_html__( 'Provide an external direct URL to a .hdr environment map. It is applied globally to every 3D viewer.', 'three-d-showcase' ) . '</p>';
 			},
 			'wp3ds-settings'
 		);
 
 		add_settings_field(
 			self::OPTION_HDRI_MAP_URL,
-			__( 'HDRI Map', 'wp-3d-showcase' ),
+			__( 'HDRI Map', 'three-d-showcase' ),
 			array( $this, 'render_hdri_field' ),
 			'wp3ds-settings',
 			'wp3ds_environment_section'
@@ -113,16 +113,16 @@ class SettingsPage {
 
 		add_settings_section(
 			'wp3ds_interaction_section',
-			__( 'Part Selection & Focus', 'wp-3d-showcase' ),
+			__( 'Part Selection & Focus', 'three-d-showcase' ),
 			static function (): void {
-				echo '<p>' . esc_html__( 'Control hover feedback, the selected-part silhouette, and how strongly the rest of the model fades in Focus mode.', 'wp-3d-showcase' ) . '</p>';
+				echo '<p>' . esc_html__( 'Control hover feedback, the selected-part silhouette, and how strongly the rest of the model fades in Focus mode.', 'three-d-showcase' ) . '</p>';
 			},
 			'wp3ds-settings'
 		);
 
 		add_settings_field(
 			self::OPTION_SELECTION_HIGHLIGHT_COLOR,
-			__( 'Selected Part Silhouette Color', 'wp-3d-showcase' ),
+			__( 'Selected Part Silhouette Color', 'three-d-showcase' ),
 			array( $this, 'render_selection_highlight_color_field' ),
 			'wp3ds-settings',
 			'wp3ds_interaction_section'
@@ -130,7 +130,7 @@ class SettingsPage {
 
 		add_settings_field(
 			self::OPTION_HOVER_HIGHLIGHT_COLOR,
-			__( 'Hover Color', 'wp-3d-showcase' ),
+			__( 'Hover Color', 'three-d-showcase' ),
 			array( $this, 'render_hover_highlight_color_field' ),
 			'wp3ds-settings',
 			'wp3ds_interaction_section'
@@ -138,7 +138,7 @@ class SettingsPage {
 
 		add_settings_field(
 			self::OPTION_SELECTION_GLOW_INTENSITY,
-			__( 'Selection Silhouette Strength', 'wp-3d-showcase' ),
+			__( 'Selection Silhouette Strength', 'three-d-showcase' ),
 			array( $this, 'render_selection_glow_intensity_field' ),
 			'wp3ds-settings',
 			'wp3ds_interaction_section'
@@ -146,7 +146,7 @@ class SettingsPage {
 
 		add_settings_field(
 			self::OPTION_ISOLATE_DIM_OPACITY,
-			__( 'Background Part Opacity', 'wp-3d-showcase' ),
+			__( 'Background Part Opacity', 'three-d-showcase' ),
 			array( $this, 'render_isolate_dim_opacity_field' ),
 			'wp3ds-settings',
 			'wp3ds_interaction_section'
@@ -164,7 +164,7 @@ class SettingsPage {
 			add_settings_error(
 				'wp3ds_settings',
 				'wp3ds_invalid_hdri',
-				__( 'Please provide a valid external .hdr URL.', 'wp-3d-showcase' )
+				__( 'Please provide a valid external .hdr URL.', 'three-d-showcase' )
 			);
 
 			return $this->get_hdri_map_url();
@@ -195,9 +195,9 @@ class SettingsPage {
 		<div class="wp3ds-admin-fields">
 			<input type="url" id="wp3ds_hdri_map_url" name="<?php echo esc_attr( self::OPTION_HDRI_MAP_URL ); ?>" value="<?php echo esc_attr( $value ); ?>" class="regular-text widefat" placeholder="https://example.com/path/to/your-map.hdr">
 			<p>
-				<button type="button" class="button-link-delete" data-clear-media="#wp3ds_hdri_map_url"><?php esc_html_e( 'Clear URL', 'wp-3d-showcase' ); ?></button>
+				<button type="button" class="button-link-delete" data-clear-media="#wp3ds_hdri_map_url"><?php esc_html_e( 'Clear URL', 'three-d-showcase' ); ?></button>
 			</p>
-			<p class="description"><?php esc_html_e( 'Enter an external direct link to a .hdr file. Media Library HDRI selection is disabled.', 'wp-3d-showcase' ); ?></p>
+			<p class="description"><?php esc_html_e( 'Enter an external direct link to a .hdr file. Media Library HDRI selection is disabled.', 'three-d-showcase' ); ?></p>
 		</div>
 		<?php
 	}
@@ -206,7 +206,7 @@ class SettingsPage {
 		$this->render_color_field(
 			self::OPTION_SELECTION_HIGHLIGHT_COLOR,
 			$this->get_selection_highlight_color(),
-			__( 'Camera-view silhouette color used when a part is selected.', 'wp-3d-showcase' )
+			__( 'Camera-view silhouette color used when a part is selected.', 'three-d-showcase' )
 		);
 	}
 
@@ -214,7 +214,7 @@ class SettingsPage {
 		$this->render_color_field(
 			self::OPTION_HOVER_HIGHLIGHT_COLOR,
 			$this->get_hover_highlight_color(),
-			__( 'Used when a part is hovered before it is selected.', 'wp-3d-showcase' )
+			__( 'Used when a part is hovered before it is selected.', 'three-d-showcase' )
 		);
 	}
 
@@ -222,7 +222,7 @@ class SettingsPage {
 		?>
 		<div class="wp3ds-admin-fields">
 			<input type="number" id="<?php echo esc_attr( self::OPTION_SELECTION_GLOW_INTENSITY ); ?>" name="<?php echo esc_attr( self::OPTION_SELECTION_GLOW_INTENSITY ); ?>" value="<?php echo esc_attr( (string) $this->get_selection_glow_intensity() ); ?>" min="0" max="1" step="0.01" class="small-text">
-			<p class="description"><?php esc_html_e( 'Controls how strong the selected part silhouette appears. Set 0 to disable it.', 'wp-3d-showcase' ); ?></p>
+			<p class="description"><?php esc_html_e( 'Controls how strong the selected part silhouette appears. Set 0 to disable it.', 'three-d-showcase' ); ?></p>
 		</div>
 		<?php
 	}
@@ -231,18 +231,18 @@ class SettingsPage {
 		?>
 		<div class="wp3ds-admin-fields">
 			<input type="number" id="<?php echo esc_attr( self::OPTION_ISOLATE_DIM_OPACITY ); ?>" name="<?php echo esc_attr( self::OPTION_ISOLATE_DIM_OPACITY ); ?>" value="<?php echo esc_attr( (string) $this->get_isolate_dim_opacity() ); ?>" min="0" max="1" step="0.01" class="small-text">
-			<p class="description"><?php esc_html_e( 'Opacity applied to non-selected parts while Focus mode is active. Use 1 to keep all parts fully visible.', 'wp-3d-showcase' ); ?></p>
+			<p class="description"><?php esc_html_e( 'Opacity applied to non-selected parts while Focus mode is active. Use 1 to keep all parts fully visible.', 'three-d-showcase' ); ?></p>
 		</div>
 		<?php
 	}
 
 	public function render_page(): void {
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_die( esc_html__( 'You are not allowed to manage these settings.', 'wp-3d-showcase' ) );
+			wp_die( esc_html__( 'You are not allowed to manage these settings.', 'three-d-showcase' ) );
 		}
 		?>
 		<div class="wrap">
-			<h1><?php esc_html_e( 'WP 3D Showcase Settings', 'wp-3d-showcase' ); ?></h1>
+			<h1><?php esc_html_e( '3D Showcase Settings', 'three-d-showcase' ); ?></h1>
 			<?php settings_errors( 'wp3ds_settings' ); ?>
 			<form action="options.php" method="post">
 				<?php
@@ -315,7 +315,7 @@ class SettingsPage {
 			add_settings_error(
 				'wp3ds_settings',
 				'wp3ds_invalid_highlight_color',
-				__( 'Please provide a valid hex color value.', 'wp-3d-showcase' )
+				__( 'Please provide a valid hex color value.', 'three-d-showcase' )
 			);
 
 			return $fallback;

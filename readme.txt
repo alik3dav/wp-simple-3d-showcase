@@ -1,8 +1,8 @@
-=== WP 3D Showcase ===
+=== 3D Showcase ===
 Contributors: your-wporg-username
 Tags: 3d, glb, viewer, threejs, product-showcase
 Requires at least: 6.4
-Tested up to: 6.8
+Tested up to: 6.9
 Requires PHP: 7.4
 Stable tag: 1.1.0
 License: GPLv2 or later
@@ -12,7 +12,7 @@ Show self-hosted GLB models with orbit controls, explode view, fullscreen mode, 
 
 == Description ==
 
-WP 3D Showcase lets you publish interactive GLB viewers without relying on remote runtime dependencies. The plugin bundles its JavaScript locally, uses WordPress media attachments for GLB files, supports external HDRI map URLs, and provides a shortcode-first workflow that is ready for WordPress.org review.
+3D Showcase lets you publish interactive GLB viewers without relying on remote runtime dependencies. The plugin bundles its JavaScript locally, uses WordPress media attachments for GLB files, supports external HDRI map URLs, and provides a shortcode-first workflow that is ready for WordPress.org review.
 
 Features include:
 
@@ -26,9 +26,9 @@ Features include:
 == Installation ==
 
 1. Upload the plugin folder to `/wp-content/plugins/` or install it through **Plugins > Add New**.
-2. Activate **WP 3D Showcase**.
+2. Activate **3D Showcase**.
 3. Upload your `.glb` file to the WordPress Media Library.
-4. Add an external direct `.hdr` URL in **Settings > WP 3D Showcase** if you want environment lighting.
+4. Add an external direct `.hdr` URL in **Settings > 3D Showcase** if you want environment lighting.
 5. Create a new **3D Showcase** item and select a GLB file in the **3D Model Settings** metabox.
 6. Insert the shortcode `[wp3ds_viewer id="123"]` or `[wp3ds_viewer slug="example-item"]` into any post or page.
 

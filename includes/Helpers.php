@@ -128,7 +128,7 @@ class Helpers {
 
 			$sanitized[] = array(
 				'key'             => sanitize_text_field( (string) $part['key'] ),
-				'name'            => sanitize_text_field( (string) ( $part['name'] ?? __( 'Part', 'wp-3d-showcase' ) ) ),
+				'name'            => sanitize_text_field( (string) ( $part['name'] ?? __( 'Part', 'three-d-showcase' ) ) ),
 				'description'     => sanitize_textarea_field( (string) ( $part['description'] ?? '' ) ),
 				'characteristics' => sanitize_textarea_field( (string) ( $part['characteristics'] ?? '' ) ),
 				'x'               => round( (float) ( $part['x'] ?? 0 ), 4 ),
