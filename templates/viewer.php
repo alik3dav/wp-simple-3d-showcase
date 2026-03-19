@@ -32,7 +32,14 @@ defined( 'ABSPATH' ) || exit;
 	<div class="wp3ds-canvas-wrap">
 		<div class="wp3ds-model-name" aria-label="<?php echo esc_attr( $model_name_aria_label ); ?>"><?php echo esc_html( $model_name ); ?></div>
 		<canvas></canvas>
-		<div class="wp3ds-loading"><?php echo esc_html( $loading_label ); ?></div>
+		<div class="wp3ds-start-overlay" data-start-overlay>
+			<button type="button" class="wp3ds-start-button" data-action="start-viewer" aria-label="<?php echo esc_attr( $start_aria_label ); ?>">
+				<span class="wp3ds-start-button__icon" aria-hidden="true"></span>
+				<span class="wp3ds-start-button__label"><?php echo esc_html( $start_label ); ?></span>
+			</button>
+			<p class="wp3ds-start-hint"><?php echo esc_html( $start_description ); ?></p>
+		</div>
+		<div class="wp3ds-loading" hidden><?php echo esc_html( $loading_label ); ?></div>
 		<div class="wp3ds-plugin-meta" aria-label="<?php echo esc_attr( $plugin_meta_aria_label ); ?>"><?php echo esc_html( $plugin_label ); ?></div>
 		<div class="wp3ds-part-modal" data-part-modal hidden>
 			<button type="button" class="wp3ds-part-modal__close" data-action="close-part-modal" aria-label="<?php echo esc_attr( $close_aria_label ); ?>">×</button>
