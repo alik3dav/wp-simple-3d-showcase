@@ -2,9 +2,9 @@
   position: relative;
   width: 100%;
   border: 1px solid #e5e7eb;
-  border-radius: 8px;
+  border-radius: 12px;
   overflow: hidden;
-  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  background: linear-gradient(180deg, #fff 0%, #f8fafc 100%);
 }
 
 .wp3ds-toolbar {
@@ -15,37 +15,36 @@
   display: flex;
   gap: 6px;
   padding: 6px;
+  flex-wrap: wrap;
 }
 
 .wp3ds-toolbar button {
   appearance: none;
-  background: rgba(255, 255, 255, 0.355);
+  border: 0;
+  background: rgb(255 255 255 / 35.5%);
   color: #0f172a;
-  border-radius: 4px;
-  padding: 4px 12px;
+  border-radius: 999px;
+  padding: 7px 12px;
   cursor: pointer;
   font-size: 10px;
   font-weight: 600;
   line-height: 1;
   letter-spacing: 0.01em;
-  box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.24);
+  box-shadow: inset 0 0 0 1px rgb(148 163 184 / 24%);
   transition: transform 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease, color 0.18s ease;
 }
 
-.wp3ds-toolbar button:hover {
-  background: #ffffff;
-  box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.18), 0 6px 16px rgba(37, 99, 235, 0.12);
-
-}
-
-.wp3ds-toolbar button:active {
-  transform: translateY(0);
+.wp3ds-toolbar button:hover,
+.wp3ds-toolbar button:focus-visible {
+  background: #fff;
+  box-shadow: inset 0 0 0 1px rgb(59 130 246 / 18%), 0 6px 16px rgb(37 99 235 / 12%);
+  outline: none;
 }
 
 .wp3ds-toolbar button.is-active {
   background: linear-gradient(135deg, #2a58bb 0%, #1d4ed8 100%);
-  color: #ffffff;
-  box-shadow: 0 10px 20px rgba(37, 99, 235, 0.26);
+  color: #fff;
+  box-shadow: 0 10px 20px rgb(37 99 235 / 26%);
 }
 
 .wp3ds-canvas-wrap {
@@ -68,16 +67,15 @@
   max-width: calc(100% - 24px);
   padding: 8px 12px;
   border-radius: 999px;
-  background: rgba(15, 23, 42, 0.68);
-  color: #ffffff;
+  background: rgb(15 23 42 / 68%);
+  color: #fff;
   font-size: 12px;
   font-weight: 600;
   line-height: 1.2;
   letter-spacing: 0.01em;
   pointer-events: none;
   backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.18);
+  box-shadow: 0 10px 24px rgb(15 23 42 / 18%);
 }
 
 .wp3ds-model-name {
@@ -97,7 +95,7 @@
   inset: 0;
   display: grid;
   place-items: center;
-  background: rgba(255,255,255,0.85);
+  background: rgb(255 255 255 / 85%);
   font-size: 12px;
   z-index: 2;
 }
@@ -110,12 +108,10 @@
   width: min(320px, calc(100% - 32px));
   padding: 16px;
   color: #0f172a;
-  background: rgba(255, 255, 255, 0.753);
-
+  background: rgb(255 255 255 / 75.3%);
   border-radius: 12px;
-  box-shadow: 0 24px 45px rgba(15, 23, 42, 0.18);
+  box-shadow: 0 24px 45px rgb(15 23 42 / 18%);
   backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
 }
 
 .wp3ds-part-modal__close {
@@ -125,8 +121,8 @@
   width: 28px;
   height: 28px;
   border: 0;
-  border-radius: 2px;
-  background: rgba(148, 163, 184, 0.041);
+  border-radius: 999px;
+  background: rgb(148 163 184 / 4.1%);
   color: #334155;
   font-size: 18px;
   line-height: 1;
@@ -199,7 +195,6 @@
     left: 12px;
     right: 12px;
     justify-content: center;
-    border-radius: 18px;
   }
 
   .wp3ds-model-name,

@@ -1,56 +1,47 @@
 <?php
+/**
+ * Front-end asset loader.
+ *
+ * @package WP3DS
+ */
 
 namespace WP3DS\Frontend;
 
-defined('ABSPATH') || exit;
+use WP3DS\Helpers;
 
-class FrontendAssets
-{
-    public function hooks(): void
-    {
-        add_action('wp_head', [$this, 'print_import_map'], 1);
-        add_action('wp_enqueue_scripts', [$this, 'register']);
-        add_filter('script_loader_tag', [$this, 'add_module_type'], 10, 3);
-    }
+defined( 'ABSPATH' ) || exit;
 
-    public function print_import_map(): void
-    {
-        ?>
-        <script type="importmap">
-        {
-          "imports": {
-            "three": "https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js",
-            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/"
-          }
-        }
-        </script>
-        <?php
-    }
+class FrontendAssets {
+	public function hooks(): void {
+		add_action( 'wp_enqueue_scripts', array( $this, 'register' ) );
+	}
 
-    public function register(): void
-    {
-        wp_register_style(
-            'wp3ds-frontend',
-            WP3DS_URL . 'assets/css/frontend.css',
-            [],
-            WP3DS_VERSION
-        );
+	public function register(): void {
+		wp_register_style(
+			'wp3ds-frontend',
+			Helpers::get_asset_url( 'assets/dist/frontend.css' ),
+			array(),
+			Helpers::get_asset_version( 'assets/dist/frontend.css' )
+		);
 
-        wp_register_script(
-            'wp3ds-frontend',
-            WP3DS_URL . 'assets/js/frontend.js',
-            [],
-            WP3DS_VERSION,
-            true
-        );
-    }
+		wp_register_script(
+			'wp3ds-frontend',
+			Helpers::get_asset_url( 'assets/dist/frontend.js' ),
+			array(),
+			Helpers::get_asset_version( 'assets/dist/frontend.js' ),
+			true
+		);
 
-    public function add_module_type(string $tag, string $handle, string $src): string
-    {
-        if ($handle !== 'wp3ds-frontend') {
-            return $tag;
-        }
-
-        return '<script type="module" src="' . esc_url($src) . '"></script>';
-    }
+		wp_localize_script(
+			'wp3ds-frontend',
+			'wp3dsFrontendConfig',
+			array(
+				'i18n' => array(
+					'missingModel' => __( 'No model file is assigned to this viewer.', 'wp-3d-showcase' ),
+					'failedModel'  => __( 'Failed to load the selected 3D model.', 'wp-3d-showcase' ),
+					'loadingLabel' => __( 'Loading 3D model…', 'wp-3d-showcase' ),
+				),
+			)
+		);
+	}
 }

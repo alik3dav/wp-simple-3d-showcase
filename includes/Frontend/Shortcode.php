@@ -1,118 +1,129 @@
 <?php
+/**
+ * Front-end shortcode renderer.
+ *
+ * @package WP3DS
+ */
 
 namespace WP3DS\Frontend;
 
-defined('ABSPATH') || exit;
+use WP3DS\Admin\SettingsPage;
+use WP3DS\Helpers;
+use WP3DS\PostTypes\ShowcasePostType;
 
-class Shortcode
-{
-    public function register(): void
-    {
-        add_shortcode('wp3ds_viewer', [$this, 'render']);
-    }
+defined( 'ABSPATH' ) || exit;
 
-    public function render(array $atts = []): string
-    {
-        $atts = shortcode_atts([
-            'id'     => 0,
-            'slug'   => '',
-            'height' => '600px',
-        ], $atts, 'wp3ds_viewer');
+class Shortcode {
+	public function register(): void {
+		add_shortcode( 'wp3ds_viewer', array( $this, 'render' ) );
+	}
 
-        $post_id = 0;
+	public function render( array $atts = array() ): string {
+		$atts = shortcode_atts(
+			array(
+				'id'     => 0,
+				'slug'   => '',
+				'height' => '600px',
+			),
+			$atts,
+			'wp3ds_viewer'
+		);
 
-        if (!empty($atts['id'])) {
-            $post_id = absint($atts['id']);
-        }
+		$post_id = $this->resolve_post_id( $atts );
 
-        if (!$post_id && !empty($atts['slug'])) {
-            $post = get_page_by_path(sanitize_title($atts['slug']), OBJECT, 'wp3ds_item');
-            if ($post) {
-                $post_id = $post->ID;
-            }
-        }
+		if ( ! $post_id || ShowcasePostType::POST_TYPE !== get_post_type( $post_id ) ) {
+			return '<p>' . esc_html__( 'Invalid 3D item.', 'wp-3d-showcase' ) . '</p>';
+		}
 
-        if (!$post_id && get_post_type() === 'wp3ds_item') {
-            $post_id = get_the_ID();
-        }
+		if ( 'publish' !== get_post_status( $post_id ) && ! current_user_can( 'read_post', $post_id ) ) {
+			return '';
+		}
 
-        if (!$post_id || get_post_type($post_id) !== 'wp3ds_item') {
-            return '<p>Invalid 3D item.</p>';
-        }
+		$model_attachment_id = absint( get_post_meta( $post_id, '_wp3ds_model_attachment_id', true ) );
+		$model_url           = Helpers::get_attachment_url( $model_attachment_id, 'glb' );
 
-        $model_url     = get_post_meta($post_id, '_wp3ds_model_url', true);
-        $model_name    = get_the_title($post_id) ?: __('3D Model', 'wp-3d-showcase');
-        $plugin_label  = sprintf(
-            /* translators: 1: plugin name, 2: plugin version */
-            __('%1$s v%2$s', 'wp-3d-showcase'),
-            'WP 3D Showcase',
-            WP3DS_VERSION
-        );
-        $bg_color      = get_post_meta($post_id, '_wp3ds_bg_color', true) ?: '#f5f5f5';
-        $auto_rotate   = get_post_meta($post_id, '_wp3ds_auto_rotate', true) === '1';
-        $explode_step  = get_post_meta($post_id, '_wp3ds_explode_step', true) ?: '0.15';
-        $explode_parts = get_post_meta($post_id, '_wp3ds_explode_parts', true) ?: '[]';
+		if ( '' === $model_url ) {
+			$model_url = $this->get_legacy_local_model_url( $post_id );
+		}
 
-        $settings_page = new \WP3DS\Admin\SettingsPage();
-        $hdri_map_url = $settings_page->get_hdri_map_url();
-        $interaction_settings = $settings_page->get_interaction_settings();
+		if ( '' === $model_url ) {
+			return '<p>' . esc_html__( 'No GLB file is assigned to this 3D item.', 'wp-3d-showcase' ) . '</p>';
+		}
 
-        if (!$model_url) {
-            return '<p>No GLB file assigned.</p>';
-        }
+		$settings_page         = new SettingsPage();
+		$interaction_settings  = $settings_page->get_interaction_settings();
+		$context               = array(
+			'height'                  => Helpers::sanitize_dimension( $atts['height'] ),
+			'model_url'               => $model_url,
+			'model_name'              => get_the_title( $post_id ) ?: __( '3D Model', 'wp-3d-showcase' ),
+			'plugin_label'            => sprintf(
+				/* translators: 1: plugin name, 2: plugin version */
+				__( '%1$s v%2$s', 'wp-3d-showcase' ),
+				'WP 3D Showcase',
+				WP3DS_VERSION
+			),
+			'bg_color'                => sanitize_hex_color( (string) get_post_meta( $post_id, '_wp3ds_bg_color', true ) ) ?: '#f5f5f5',
+			'auto_rotate'             => '1' === get_post_meta( $post_id, '_wp3ds_auto_rotate', true ),
+			'explode_step'            => (string) max( 0, min( 5, (float) get_post_meta( $post_id, '_wp3ds_explode_step', true ) ?: 0.15 ) ),
+			'explode_parts'           => wp_json_encode( Helpers::normalize_explode_parts( get_post_meta( $post_id, '_wp3ds_explode_parts', true ) ) ) ?: '[]',
+			'hdri_map_url'            => $settings_page->get_hdri_map_url(),
+			'interaction_settings'    => $interaction_settings,
+			'controls_aria_label'     => __( '3D viewer controls', 'wp-3d-showcase' ),
+			'reset_label'             => __( 'Reset', 'wp-3d-showcase' ),
+			'rotate_label'            => __( 'Rotate', 'wp-3d-showcase' ),
+			'explode_label'           => __( 'Explode', 'wp-3d-showcase' ),
+			'focus_label'             => __( 'Focus', 'wp-3d-showcase' ),
+			'fullscreen_label'        => __( 'Full', 'wp-3d-showcase' ),
+			'reset_aria_label'        => __( 'Reset view', 'wp-3d-showcase' ),
+			'rotate_aria_label'       => __( 'Toggle auto rotation', 'wp-3d-showcase' ),
+			'explode_aria_label'      => __( 'Toggle explode view', 'wp-3d-showcase' ),
+			'focus_aria_label'        => __( 'Toggle focus mode', 'wp-3d-showcase' ),
+			'fullscreen_aria_label'   => __( 'Toggle fullscreen', 'wp-3d-showcase' ),
+			'model_name_aria_label'   => __( '3D model name', 'wp-3d-showcase' ),
+			'plugin_meta_aria_label'  => __( 'Plugin name and version', 'wp-3d-showcase' ),
+			'loading_label'           => __( 'Loading 3D model…', 'wp-3d-showcase' ),
+			'part_details_eyebrow'    => __( 'Part details', 'wp-3d-showcase' ),
+			'select_part_label'       => __( 'Select a part', 'wp-3d-showcase' ),
+			'part_details_description'=> __( 'Double-click any object in the model to open its details.', 'wp-3d-showcase' ),
+			'characteristics_label'   => __( 'Characteristics', 'wp-3d-showcase' ),
+			'mesh_key_label'          => __( 'Mesh key', 'wp-3d-showcase' ),
+			'close_aria_label'        => __( 'Close part details', 'wp-3d-showcase' ),
+		);
 
-        wp_enqueue_style('wp3ds-frontend');
-        wp_enqueue_script('wp3ds-frontend');
+		wp_enqueue_style( 'wp3ds-frontend' );
+		wp_enqueue_script( 'wp3ds-frontend' );
 
-        ob_start();
-        ?>
-        <div
-            class="wp3ds-viewer"
-            style="height: <?php echo esc_attr($atts['height']); ?>;"
-            data-model-url="<?php echo esc_url($model_url); ?>"
-            data-bg-color="<?php echo esc_attr($bg_color); ?>"
-            data-auto-rotate="<?php echo esc_attr($auto_rotate ? 'true' : 'false'); ?>"
-            data-explode-step="<?php echo esc_attr($explode_step); ?>"
-            data-explode-parts="<?php echo esc_attr($explode_parts); ?>"
-            data-hdri-map-url="<?php echo esc_url($hdri_map_url); ?>"
-            data-selection-highlight-color="<?php echo esc_attr($interaction_settings['selectionHighlightColor']); ?>"
-            data-hover-highlight-color="<?php echo esc_attr($interaction_settings['hoverHighlightColor']); ?>"
-            data-selection-glow-intensity="<?php echo esc_attr((string) $interaction_settings['selectionGlowIntensity']); ?>"
-            data-isolate-dim-opacity="<?php echo esc_attr((string) $interaction_settings['isolateDimOpacity']); ?>"
-        >
-            <div class="wp3ds-toolbar" aria-label="3D viewer controls">
-                <button type="button" data-action="reset" aria-label="Reset view">Reset</button>
-                <button type="button" data-action="autorotate" aria-label="Toggle auto rotation">Rotate</button>
-                <button type="button" data-action="explode" aria-label="Toggle explode view">Explode</button>
-                <button type="button" data-action="isolate" aria-label="Toggle isolate mode">Focus</button>
-                <button type="button" data-action="fullscreen" aria-label="Toggle fullscreen">Full</button>
-            </div>
+		return Helpers::render_template( 'viewer.php', $context );
+	}
 
-            <div class="wp3ds-canvas-wrap">
-                <div class="wp3ds-model-name" aria-label="3D model name"><?php echo esc_html($model_name); ?></div>
-                <canvas></canvas>
-                <div class="wp3ds-loading">Loading 3D model…</div>
-                <div class="wp3ds-plugin-meta" aria-label="Plugin name and version"><?php echo esc_html($plugin_label); ?></div>
-                <div class="wp3ds-part-modal" data-part-modal hidden>
-                    <button type="button" class="wp3ds-part-modal__close" data-action="close-part-modal" aria-label="Close part details">×</button>
-                    <div class="wp3ds-part-modal__eyebrow">Part details</div>
-                    <h3 class="wp3ds-part-modal__title" data-part-title>Select a part</h3>
-                    <p class="wp3ds-part-modal__description" data-part-description>Click any object in the model to open a compact info card with its details.</p>
-                    <div class="wp3ds-part-modal__meta">
-                        <div class="wp3ds-part-modal__section" data-part-characteristics-section hidden>
-                            <div class="wp3ds-part-modal__label">Characteristics</div>
-                            <ul class="wp3ds-part-modal__list" data-part-characteristics></ul>
-                        </div>
-                        <div class="wp3ds-part-modal__section">
-                            <div class="wp3ds-part-modal__label">Mesh key</div>
-                            <code class="wp3ds-part-modal__code" data-part-key>—</code>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <?php
+	private function resolve_post_id( array $atts ): int {
+		$post_id = ! empty( $atts['id'] ) ? absint( $atts['id'] ) : 0;
 
-        return (string) ob_get_clean();
-    }
+		if ( ! $post_id && ! empty( $atts['slug'] ) ) {
+			$post = get_page_by_path( sanitize_title( (string) $atts['slug'] ), OBJECT, ShowcasePostType::POST_TYPE );
+			if ( $post instanceof \WP_Post ) {
+				$post_id = $post->ID;
+			}
+		}
+
+		if ( ! $post_id && ShowcasePostType::POST_TYPE === get_post_type() ) {
+			$post_id = (int) get_the_ID();
+		}
+
+		return $post_id;
+	}
+
+	private function get_legacy_local_model_url( int $post_id ): string {
+		$legacy_url     = (string) get_post_meta( $post_id, '_wp3ds_model_url', true );
+		$attachment_id  = Helpers::resolve_local_attachment_id( $legacy_url, 'glb' );
+		$attachment_url = Helpers::get_attachment_url( $attachment_id, 'glb' );
+
+		if ( $attachment_id > 0 && '' !== $attachment_url ) {
+			update_post_meta( $post_id, '_wp3ds_model_attachment_id', $attachment_id );
+			update_post_meta( $post_id, '_wp3ds_model_url', $attachment_url );
+			return $attachment_url;
+		}
+
+		return '';
+	}
 }

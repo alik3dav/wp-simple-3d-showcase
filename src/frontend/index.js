@@ -1,7 +1,10 @@
+import './style.css'
 import * as THREE from 'three'
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
-import { RGBELoader } from 'three/addons/loaders/RGBELoader.js'
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
+import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js'
+
+const frontendI18n = window.wp3dsFrontendConfig?.i18n ?? {}
 
 class WP3DSViewer {
   constructor(root) {
@@ -33,6 +36,7 @@ class WP3DSViewer {
     this.hovered = null
     this.pmremGenerator = null
     this.environmentMap = null
+    this.animationFrameId = 0
 
     this.isolateMode = false
     this.selected = null
@@ -47,17 +51,19 @@ class WP3DSViewer {
     this.partCharacteristicsEl = root.querySelector('[data-part-characteristics]')
     this.partCharacteristicsSection = root.querySelector('[data-part-characteristics-section]')
 
+    this.boundResize = () => this.onResize()
+    this.boundPointerMove = (event) => this.onPointerMove(event)
+    this.boundDoubleClick = (event) => this.onDoubleClick(event)
+
     this.init()
   }
 
   parseExplodeParts(rawValue) {
     try {
       const parsed = JSON.parse(rawValue)
-
       if (!Array.isArray(parsed)) {
         return new Map()
       }
-
       return new Map(
         parsed
           .filter((part) => part && part.key)
@@ -74,8 +80,7 @@ class WP3DSViewer {
             },
           ])
       )
-    } catch (error) {
-      console.error('Failed to parse explode part settings.', error)
+    } catch {
       return new Map()
     }
   }
@@ -113,26 +118,21 @@ class WP3DSViewer {
 
   parseOpacityValue(value, fallback) {
     const parsed = Number.parseFloat(value || '')
-
     if (Number.isNaN(parsed)) {
       return fallback
     }
-
     return Math.min(Math.max(parsed, 0), 1)
   }
 
   init() {
     if (!this.modelUrl) {
-      console.error('No model URL found')
-      if (this.loadingEl) {
-        this.loadingEl.textContent = 'No model URL found'
-      }
+      this.setLoadingText(frontendI18n.missingModel || 'No model file is assigned to this viewer.')
       return
     }
 
-    const width = this.root.clientWidth || 800
     const wrap = this.root.querySelector('.wp3ds-canvas-wrap')
-    const height = wrap.clientHeight || 500
+    const width = this.root.clientWidth || 800
+    const height = wrap?.clientHeight || 500
 
     this.scene = new THREE.Scene()
     this.scene.background = new THREE.Color(this.bgColor)
@@ -148,18 +148,17 @@ class WP3DSViewer {
     this.renderer.outputColorSpace = THREE.SRGBColorSpace
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping
     this.renderer.toneMappingExposure = 1
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2))
     this.renderer.setSize(width, height)
 
     this.pmremGenerator = new THREE.PMREMGenerator(this.renderer)
     this.pmremGenerator.compileEquirectangularShader()
 
-    const ambient = new THREE.AmbientLight(0xffffff, 1.4)
-    this.scene.add(ambient)
+    this.scene.add(new THREE.AmbientLight(0xffffff, 1.4))
 
-    const dir = new THREE.DirectionalLight(0xffffff, 1.6)
-    dir.position.set(4, 8, 4)
-    this.scene.add(dir)
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1.6)
+    directionalLight.position.set(4, 8, 4)
+    this.scene.add(directionalLight)
 
     this.controls = new OrbitControls(this.camera, this.canvas)
     this.controls.enableDamping = true
@@ -173,6 +172,12 @@ class WP3DSViewer {
     this.animate()
   }
 
+  setLoadingText(message) {
+    if (this.loadingEl) {
+      this.loadingEl.textContent = message
+    }
+  }
+
   loadEnvironmentMap() {
     if (!this.hdriMapUrl || !this.scene || !this.pmremGenerator) {
       return
@@ -184,16 +189,12 @@ class WP3DSViewer {
       this.hdriMapUrl,
       (texture) => {
         const envTexture = this.pmremGenerator.fromEquirectangular(texture).texture
-
         texture.dispose()
-
         this.environmentMap = envTexture
         this.scene.environment = envTexture
       },
       undefined,
-      (error) => {
-        console.error('Failed to load HDRI map:', error)
-      }
+      () => {}
     )
   }
 
@@ -205,7 +206,6 @@ class WP3DSViewer {
       (gltf) => {
         this.model = gltf.scene
         this.scene.add(this.model)
-
         this.collectParts()
         this.centerAndFitModel()
         this.calculateExplodeTargets()
@@ -214,16 +214,11 @@ class WP3DSViewer {
       (progress) => {
         if (progress.total) {
           const percent = Math.round((progress.loaded / progress.total) * 100)
-          if (this.loadingEl) {
-            this.loadingEl.textContent = `Loading 3D model… ${percent}%`
-          }
+          this.setLoadingText(`${frontendI18n.loadingLabel || 'Loading 3D model…'} ${percent}%`)
         }
       },
-      (error) => {
-        console.error('Failed to load GLB model:', error)
-        if (this.loadingEl) {
-          this.loadingEl.textContent = 'Failed to load model'
-        }
+      () => {
+        this.setLoadingText(frontendI18n.failedModel || 'Failed to load the selected 3D model.')
       }
     )
   }
@@ -233,47 +228,50 @@ class WP3DSViewer {
     let meshIndex = 0
 
     this.model.traverse((child) => {
-      if (child.isMesh) {
-        meshIndex += 1
+      if (!child.isMesh) {
+        return
+      }
 
-        child.userData.wp3dsPartKey = this.createPartKey(child, meshIndex)
-        child.userData.wp3dsPartMeta = this.explodePartsSettings.get(child.userData.wp3dsPartKey) || null
-        this.meshParts.push(child)
-        this.originalPositions.set(child.uuid, child.position.clone())
+      meshIndex += 1
+      child.userData.wp3dsPartKey = this.createPartKey(child, meshIndex)
+      child.userData.wp3dsPartMeta = this.explodePartsSettings.get(child.userData.wp3dsPartKey) || null
+      this.meshParts.push(child)
+      this.originalPositions.set(child.uuid, child.position.clone())
 
-        if (child.material) {
-          child.material = Array.isArray(child.material)
-            ? child.material.map((material) => material.clone())
-            : child.material.clone()
+      if (child.material) {
+        child.material = Array.isArray(child.material)
+          ? child.material.map((material) => material.clone())
+          : child.material.clone()
 
-          this.storeMaterialState(child)
+        this.storeMaterialState(child)
 
-          if (this.environmentMap) {
-            this.forEachMaterial(child, (material) => {
-              material.envMap = this.environmentMap
-              material.needsUpdate = true
-            })
-          }
+        if (this.environmentMap) {
+          this.forEachMaterial(child, (material) => {
+            material.envMap = this.environmentMap
+            material.needsUpdate = true
+          })
         }
       }
     })
   }
 
   calculateExplodeTargets() {
-    if (!this.model) return
+    if (!this.model) {
+      return
+    }
 
     const box = new THREE.Box3().setFromObject(this.model)
     const center = box.getCenter(new THREE.Vector3())
-
     this.explodeTargets.clear()
 
     this.meshParts.forEach((mesh) => {
       const original = this.originalPositions.get(mesh.uuid)
-      if (!original) return
+      if (!original) {
+        return
+      }
 
       const worldPos = new THREE.Vector3()
       mesh.getWorldPosition(worldPos)
-
       const defaultDirection = worldPos.clone().sub(center)
 
       if (defaultDirection.lengthSq() === 0) {
@@ -293,13 +291,11 @@ class WP3DSViewer {
 
   forEachMaterial(mesh, callback) {
     const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
-
     materials.filter(Boolean).forEach(callback)
   }
 
   storeMaterialState(mesh) {
     const states = []
-
     this.forEachMaterial(mesh, (material) => {
       states.push({
         opacity: material.opacity,
@@ -309,23 +305,19 @@ class WP3DSViewer {
         emissiveIntensity: typeof material.emissiveIntensity === 'number' ? material.emissiveIntensity : null,
       })
     })
-
     this.materialStates.set(mesh.uuid, states)
   }
 
   restoreMaterialState(mesh) {
     const states = this.materialStates.get(mesh.uuid)
-
     if (!states) {
       return
     }
 
     let index = 0
-
     this.forEachMaterial(mesh, (material) => {
       const state = states[index]
       index += 1
-
       if (!state) {
         return
       }
@@ -354,11 +346,9 @@ class WP3DSViewer {
 
   removeSelectionHighlight(mesh) {
     const highlight = this.selectionHighlightMap.get(mesh.uuid)
-
     if (!highlight) {
       return
     }
-
     mesh.remove(highlight.shell)
     highlight.material.dispose()
     this.selectionHighlightMap.delete(mesh.uuid)
@@ -425,34 +415,36 @@ class WP3DSViewer {
     const size = box.getSize(new THREE.Vector3())
 
     this.model.position.sub(center)
-
     const maxDim = Math.max(size.x, size.y, size.z)
     const fitDistance = Math.max(maxDim * 1.8, 2)
 
     this.camera.position.set(0, Math.max(maxDim * 0.4, 0.5), fitDistance)
     this.controls.target.set(0, 0, 0)
     this.controls.update()
+    this.controls.saveState()
   }
 
   explode() {
-    if (!this.model) return
-
+    if (!this.model) {
+      return
+    }
     this.isExploded = !this.isExploded
     this.updateButtonState('explode', this.isExploded)
   }
 
   updateExplodeAnimation() {
-    if (!this.meshParts.length) return
+    if (!this.meshParts.length) {
+      return
+    }
 
     this.meshParts.forEach((mesh) => {
       const original = this.originalPositions.get(mesh.uuid)
       const exploded = this.explodeTargets.get(mesh.uuid)
       const target = this.isExploded ? exploded : original
-
-      if (!target) return
-
+      if (!target) {
+        return
+      }
       mesh.position.lerp(target, this.explodeLerpAlpha)
-
       if (mesh.position.distanceToSquared(target) < 0.000001) {
         mesh.position.copy(target)
       }
@@ -461,11 +453,9 @@ class WP3DSViewer {
 
   toggleIsolateMode() {
     this.isolateMode = !this.isolateMode
-
     if (!this.isolateMode && !this.partModal?.hidden && this.selected) {
       this.applyIsolationState()
     }
-
     this.updateButtonState('isolate', this.isolateMode)
     this.applyIsolationState()
   }
@@ -493,11 +483,9 @@ class WP3DSViewer {
     if (this.partTitleEl) {
       this.partTitleEl.textContent = meta.name
     }
-
     if (this.partDescriptionEl) {
       this.partDescriptionEl.textContent = meta.description
     }
-
     if (this.partKeyEl) {
       this.partKeyEl.textContent = meta.key
     }
@@ -516,14 +504,12 @@ class WP3DSViewer {
 
     if (this.partModal) {
       this.partModal.hidden = false
-      this.partModal.classList.add('is-visible')
     }
   }
 
   hidePartModal() {
     if (this.partModal) {
       this.partModal.hidden = true
-      this.partModal.classList.remove('is-visible')
     }
   }
 
@@ -540,14 +526,17 @@ class WP3DSViewer {
     this.applyIsolationState()
   }
 
-  onDoubleClick(event) {
+  getIntersections(event) {
     const rect = this.canvas.getBoundingClientRect()
     this.pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1
     this.pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1
 
     this.raycaster.setFromCamera(this.pointer, this.camera)
-    const intersects = this.raycaster.intersectObjects(this.meshParts, true)
+    return this.raycaster.intersectObjects(this.meshParts, true)
+  }
 
+  onDoubleClick(event) {
+    const intersects = this.getIntersections(event)
     if (!intersects.length) {
       if (!this.isolateMode) {
         this.selected = null
@@ -556,7 +545,6 @@ class WP3DSViewer {
       }
       return
     }
-
     this.toggleSelectedPart(intersects[0].object)
   }
 
@@ -566,6 +554,8 @@ class WP3DSViewer {
     this.selected = null
     this.hidePartModal()
     this.updateButtonState('explode', false)
+    this.updateButtonState('isolate', false)
+    this.isolateMode = false
     this.applyIsolationState()
   }
 
@@ -578,25 +568,24 @@ class WP3DSViewer {
   }
 
   onPointerMove(event) {
-    const rect = this.canvas.getBoundingClientRect()
-    this.pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1
-    this.pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1
-
-    this.raycaster.setFromCamera(this.pointer, this.camera)
-    const intersects = this.raycaster.intersectObjects(this.meshParts, true)
+    const intersects = this.getIntersections(event)
 
     if (this.hovered && (!intersects.length || this.hovered !== intersects[0].object)) {
       this.clearHover(this.hovered)
       this.hovered = null
     }
 
-    if (intersects.length) {
-      const obj = intersects[0].object
-      if (this.hovered !== obj) {
-        if (this.hovered) this.clearHover(this.hovered)
-        this.hovered = obj
-        this.applyHover(obj)
+    if (!intersects.length) {
+      return
+    }
+
+    const object = intersects[0].object
+    if (this.hovered !== object) {
+      if (this.hovered) {
+        this.clearHover(this.hovered)
       }
+      this.hovered = object
+      this.applyHover(object)
     }
   }
 
@@ -635,11 +624,9 @@ class WP3DSViewer {
 
   updateButtonState(action, active) {
     const button = this.root.querySelector(`[data-action="${action}"]`)
-
     if (!button) {
       return
     }
-
     button.classList.toggle('is-active', active)
     button.setAttribute('aria-pressed', active ? 'true' : 'false')
   }
@@ -654,27 +641,14 @@ class WP3DSViewer {
   }
 
   bindUI() {
-    this.root.querySelector('[data-action="isolate"]')?.addEventListener('click', () => {
-      this.toggleIsolateMode()
-    })
-
-    this.root.querySelector('[data-action="reset"]')?.addEventListener('click', () => {
-      this.resetView()
-    })
-
+    this.root.querySelector('[data-action="isolate"]')?.addEventListener('click', () => this.toggleIsolateMode())
+    this.root.querySelector('[data-action="reset"]')?.addEventListener('click', () => this.resetView())
     this.root.querySelector('[data-action="autorotate"]')?.addEventListener('click', () => {
       this.controls.autoRotate = !this.controls.autoRotate
       this.updateButtonState('autorotate', this.controls.autoRotate)
     })
-
-    this.root.querySelector('[data-action="explode"]')?.addEventListener('click', () => {
-      this.explode()
-    })
-
-    this.root.querySelector('[data-action="fullscreen"]')?.addEventListener('click', () => {
-      this.toggleFullscreen()
-    })
-
+    this.root.querySelector('[data-action="explode"]')?.addEventListener('click', () => this.explode())
+    this.root.querySelector('[data-action="fullscreen"]')?.addEventListener('click', () => this.toggleFullscreen())
     this.root.querySelector('[data-action="close-part-modal"]')?.addEventListener('click', () => {
       this.selected = null
       this.hidePartModal()
@@ -687,18 +661,21 @@ class WP3DSViewer {
   }
 
   bindEvents() {
-    window.addEventListener('resize', () => {
-      const width = this.root.clientWidth || 800
-      const wrap = this.root.querySelector('.wp3ds-canvas-wrap')
-      const height = wrap.clientHeight || 500
+    window.addEventListener('resize', this.boundResize)
+    this.canvas.addEventListener('pointermove', this.boundPointerMove)
+    this.canvas.addEventListener('dblclick', this.boundDoubleClick)
+  }
 
-      this.camera.aspect = width / height
-      this.camera.updateProjectionMatrix()
-      this.renderer.setSize(width, height)
-    })
-
-    this.canvas.addEventListener('pointermove', (e) => this.onPointerMove(e))
-    this.canvas.addEventListener('dblclick', (e) => this.onDoubleClick(e))
+  onResize() {
+    if (!this.camera || !this.renderer) {
+      return
+    }
+    const wrap = this.root.querySelector('.wp3ds-canvas-wrap')
+    const width = this.root.clientWidth || 800
+    const height = wrap?.clientHeight || 500
+    this.camera.aspect = width / height
+    this.camera.updateProjectionMatrix()
+    this.renderer.setSize(width, height)
   }
 
   hideLoading() {
@@ -708,9 +685,11 @@ class WP3DSViewer {
   }
 
   animate() {
-    requestAnimationFrame(() => this.animate())
+    this.animationFrameId = window.requestAnimationFrame(() => this.animate())
     this.updateExplodeAnimation()
-    if (this.controls) this.controls.update()
+    if (this.controls) {
+      this.controls.update()
+    }
     if (this.renderer && this.scene && this.camera) {
       this.renderer.render(this.scene, this.camera)
     }

@@ -3,13 +3,18 @@
 }
 
 .wp3ds-admin-fields input[type='text'],
-.wp3ds-admin-fields input[type='number'] {
-  max-width: 520px;
+.wp3ds-admin-fields input[type='number'],
+.wp3ds-admin-fields input[type='url'] {
+  max-width: 640px;
 }
 
 .wp3ds-admin-fields textarea {
   width: 100%;
   min-width: 220px;
+}
+
+.wp3ds-admin-media-field .button-link-delete {
+  margin-left: 12px;
 }
 
 .wp3ds-explode-parts {

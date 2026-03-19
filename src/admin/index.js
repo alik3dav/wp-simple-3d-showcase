@@ -1,8 +1,10 @@
+import './style.css'
 import * as THREE from 'three'
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 
-const frames = new Map()
 const loader = new GLTFLoader()
+const frames = new Map()
+const adminI18n = window.wp3dsAdminConfig?.i18n ?? {}
 
 function formatNumber(value) {
   return Number.parseFloat(value).toFixed(3)
@@ -13,7 +15,7 @@ function escapeHtml(value) {
     .replaceAll('&', '&amp;')
     .replaceAll('<', '&lt;')
     .replaceAll('>', '&gt;')
-    .replaceAll('\"', '&quot;')
+    .replaceAll('"', '&quot;')
     .replaceAll("'", '&#039;')
 }
 
@@ -37,7 +39,6 @@ function normalizeStoredParts(rawValue) {
 
   try {
     const parsed = JSON.parse(rawValue)
-
     if (!Array.isArray(parsed)) {
       return []
     }
@@ -46,27 +47,33 @@ function normalizeStoredParts(rawValue) {
       .filter((part) => part && part.key)
       .map((part) => ({
         key: String(part.key),
-        name: String(part.name || 'Part'),
+        name: String(part.name || adminI18n.part || 'Part'),
         description: String(part.description || ''),
         characteristics: String(part.characteristics || ''),
         x: Number.parseFloat(part.x || 0) || 0,
         y: Number.parseFloat(part.y || 0) || 0,
         z: Number.parseFloat(part.z || 0) || 0,
       }))
-  } catch (error) {
-    console.error('Failed to parse stored explode parts JSON.', error)
+  } catch {
     return []
   }
 }
 
 function syncHiddenField(container, parts) {
   const hiddenInput = container.querySelector('#wp3ds_explode_parts')
-
   if (!hiddenInput) {
     return
   }
-
   hiddenInput.value = JSON.stringify(parts)
+}
+
+function partsStatusLabel(count) {
+  if (!count) {
+    return adminI18n.noPartsDetected || 'No mesh parts were detected in this GLB file.'
+  }
+
+  const template = adminI18n.partsDetected || 'Detected %d parts automatically.'
+  return template.replace('%d', String(count))
 }
 
 function renderPartsTable(container, parts) {
@@ -80,51 +87,47 @@ function renderPartsTable(container, parts) {
   if (!parts.length) {
     listEl.hidden = true
     listEl.innerHTML = ''
-    statusEl.textContent = 'No mesh parts were detected in this GLB file.'
+    statusEl.textContent = partsStatusLabel(0)
     syncHiddenField(container, [])
     return
   }
 
-  statusEl.textContent = `Detected ${parts.length} part${parts.length === 1 ? '' : 's'} automatically.`
+  statusEl.textContent = partsStatusLabel(parts.length)
   listEl.hidden = false
 
   listEl.innerHTML = `
     <table class="widefat striped wp3ds-parts-table">
       <thead>
         <tr>
-          <th>Part</th>
-          <th>Description</th>
-          <th>Characteristics</th>
+          <th>${escapeHtml(adminI18n.partColumn || 'Part')}</th>
+          <th>${escapeHtml(adminI18n.descriptionColumn || 'Description')}</th>
+          <th>${escapeHtml(adminI18n.characteristicsCol || 'Characteristics')}</th>
           <th>X</th>
           <th>Y</th>
           <th>Z</th>
         </tr>
       </thead>
       <tbody>
-        ${parts
-          .map(
-            (part, index) => `
-              <tr>
-                <td>
-                  <label>
-                    <span class="screen-reader-text">Display name</span>
-                    <input type="text" class="regular-text" data-text-input="name" data-index="${index}" value="${escapeHtml(part.name)}" placeholder="Display name">
-                  </label>
-                  <div class="description">${escapeHtml(part.key)}</div>
-                </td>
-                <td>
-                  <textarea rows="3" class="large-text" data-text-input="description" data-index="${index}" placeholder="Short summary shown in the viewer">${escapeHtml(part.description)}</textarea>
-                </td>
-                <td>
-                  <textarea rows="3" class="large-text" data-text-input="characteristics" data-index="${index}" placeholder="One characteristic per line">${escapeHtml(part.characteristics)}</textarea>
-                </td>
-                <td><input type="number" step="0.001" class="small-text" data-axis-input="x" data-index="${index}" value="${formatNumber(part.x)}"></td>
-                <td><input type="number" step="0.001" class="small-text" data-axis-input="y" data-index="${index}" value="${formatNumber(part.y)}"></td>
-                <td><input type="number" step="0.001" class="small-text" data-axis-input="z" data-index="${index}" value="${formatNumber(part.z)}"></td>
-              </tr>
-            `
-          )
-          .join('')}
+        ${parts.map((part, index) => `
+          <tr>
+            <td>
+              <label>
+                <span class="screen-reader-text">${escapeHtml(adminI18n.displayName || 'Display name')}</span>
+                <input type="text" class="regular-text" data-text-input="name" data-index="${index}" value="${escapeHtml(part.name)}" placeholder="${escapeHtml(adminI18n.displayName || 'Display name')}">
+              </label>
+              <div class="description">${escapeHtml(part.key)}</div>
+            </td>
+            <td>
+              <textarea rows="3" class="large-text" data-text-input="description" data-index="${index}" placeholder="${escapeHtml(adminI18n.shortSummary || 'Short summary shown in the viewer')}">${escapeHtml(part.description)}</textarea>
+            </td>
+            <td>
+              <textarea rows="3" class="large-text" data-text-input="characteristics" data-index="${index}" placeholder="${escapeHtml(adminI18n.onePerLine || 'One characteristic per line')}">${escapeHtml(part.characteristics)}</textarea>
+            </td>
+            <td><input type="number" step="0.001" class="small-text" data-axis-input="x" data-index="${index}" value="${formatNumber(part.x)}"></td>
+            <td><input type="number" step="0.001" class="small-text" data-axis-input="y" data-index="${index}" value="${formatNumber(part.y)}"></td>
+            <td><input type="number" step="0.001" class="small-text" data-axis-input="z" data-index="${index}" value="${formatNumber(part.z)}"></td>
+          </tr>
+        `).join('')}
       </tbody>
     </table>
   `
@@ -144,14 +147,14 @@ function detectModelParts(url, container) {
       listEl.innerHTML = ''
     }
     if (statusEl) {
-      statusEl.textContent = 'Select or enter a GLB file URL to detect model parts.'
+      statusEl.textContent = adminI18n.selectGlbPrompt || 'Select a GLB file to detect model parts.'
     }
     syncHiddenField(container, storedParts)
     return
   }
 
   if (statusEl) {
-    statusEl.textContent = 'Detecting mesh parts from the GLB file…'
+    statusEl.textContent = adminI18n.detectingParts || 'Detecting mesh parts from the GLB file…'
   }
 
   loader.load(
@@ -169,9 +172,8 @@ function detectModelParts(url, container) {
         }
 
         meshIndex += 1
-
         const key = createPartKey(child, meshIndex)
-        const name = child.name || `Part ${meshIndex}`
+        const name = child.name || `${adminI18n.part || 'Part'} ${meshIndex}`
         const worldPos = child.getWorldPosition(new THREE.Vector3())
         const direction = worldPos.clone().sub(center)
 
@@ -198,71 +200,94 @@ function detectModelParts(url, container) {
       renderPartsTable(container, detectedParts)
     },
     undefined,
-    (error) => {
-      console.error('Failed to inspect GLB file for explode parts.', error)
-
+    () => {
       if (listEl) {
         listEl.hidden = true
         listEl.innerHTML = ''
       }
-
       if (statusEl) {
-        statusEl.textContent = 'Unable to load the GLB file for automatic part detection.'
+        statusEl.textContent = adminI18n.loadGlbError || 'Unable to inspect the selected GLB file.'
       }
     }
   )
 }
 
+function clearMediaField(button) {
+  const input = document.querySelector(button.dataset.clearMedia || '')
+  const idInput = document.querySelector(button.dataset.clearMediaId || '')
+
+  if (input) {
+    input.value = ''
+    input.dispatchEvent(new Event('change', { bubbles: true }))
+  }
+
+  if (idInput) {
+    idInput.value = ''
+  }
+}
+
+function isAllowedAttachment(attachment, allowedExtension) {
+  if (!allowedExtension) {
+    return true
+  }
+  const url = String(attachment?.url || '').toLowerCase()
+  return url.endsWith(`.${allowedExtension.toLowerCase()}`)
+}
+
 function initMediaPicker() {
   document.addEventListener('click', (event) => {
-    const button = event.target.closest('[data-media-target]')
+    const clearButton = event.target.closest('[data-clear-media]')
+    if (clearButton) {
+      event.preventDefault()
+      clearMediaField(clearButton)
+      return
+    }
 
+    const button = event.target.closest('[data-media-target]')
     if (!button) {
       return
     }
 
     event.preventDefault()
-
     const targetSelector = button.dataset.mediaTarget
     const input = document.querySelector(targetSelector)
+    const idInput = document.querySelector(button.dataset.mediaIdTarget || '')
 
     if (!targetSelector || !input) {
       return
     }
 
     const cacheKey = `${targetSelector}:${button.dataset.mediaTitle || ''}`
-
     if (frames.has(cacheKey)) {
       frames.get(cacheKey).open()
       return
     }
 
     const frame = wp.media({
-      title: button.dataset.mediaTitle || 'Select file',
+      title: button.dataset.mediaTitle || adminI18n.selectFile || 'Select file',
       button: {
-        text: button.dataset.mediaButton || 'Use this file',
+        text: button.dataset.mediaButton || adminI18n.useFile || 'Use this file',
       },
       multiple: false,
     })
 
     frame.on('select', () => {
       const attachment = frame.state().get('selection').first().toJSON()
-      input.value = attachment.url
+      if (!isAllowedAttachment(attachment, button.dataset.allowedExtension)) {
+        window.alert(adminI18n.invalidFileType || 'Please select a file with the required extension.')
+        return
+      }
+
+      input.value = attachment.url || ''
+      if (idInput) {
+        idInput.value = attachment.id || ''
+      }
       input.dispatchEvent(new Event('change', { bubbles: true }))
     })
 
     frames.set(cacheKey, frame)
     frame.open()
   })
-
-  const modelInput = document.querySelector('#wp3ds_model_url')
-
-  if (modelInput && !document.querySelector('#wp3ds-open-media')) {
-    modelInput.insertAdjacentHTML(
-      'afterend',
-      ' <button type="button" class="button" id="wp3ds-open-media" data-media-target="#wp3ds_model_url" data-media-title="Select GLB File" data-media-button="Use this file">Select GLB</button>'
-    )
-  }
 }
 
 function initExplodePartsManager() {
@@ -285,11 +310,9 @@ function initExplodePartsManager() {
     if (axisInput) {
       const partIndex = Number.parseInt(axisInput.dataset.index || '-1', 10)
       const axis = axisInput.dataset.axisInput
-
       if (!parts[partIndex] || !['x', 'y', 'z'].includes(axis)) {
         return
       }
-
       parts[partIndex][axis] = Number.parseFloat(axisInput.value || '0') || 0
       container.dataset.explodeParts = JSON.stringify(parts)
       syncHiddenField(container, parts)
@@ -302,11 +325,9 @@ function initExplodePartsManager() {
 
     const partIndex = Number.parseInt(textInput.dataset.index || '-1', 10)
     const field = textInput.dataset.textInput
-
     if (!parts[partIndex] || !['name', 'description', 'characteristics'].includes(field)) {
       return
     }
-
     parts[partIndex][field] = textInput.value
     container.dataset.explodeParts = JSON.stringify(parts)
     syncHiddenField(container, parts)
