@@ -163,6 +163,11 @@
   z-index: 3;
 }
 
+.wp3ds-start-overlay[hidden],
+.wp3ds-loading[hidden] {
+  display: none !important;
+}
+
 .wp3ds-part-modal {
   position: absolute;
   left: 16px;
