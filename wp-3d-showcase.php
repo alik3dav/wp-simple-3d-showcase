@@ -11,7 +11,7 @@
 
 defined('ABSPATH') || exit;
 
-define('WP3DS_VERSION', '1.0.0');
+define('WP3DS_VERSION', '1.0.1');
 define('WP3DS_FILE', __FILE__);
 define('WP3DS_PATH', plugin_dir_path(__FILE__));
 define('WP3DS_URL', plugin_dir_url(__FILE__));

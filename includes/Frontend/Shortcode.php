@@ -41,6 +41,13 @@ class Shortcode
         }
 
         $model_url     = get_post_meta($post_id, '_wp3ds_model_url', true);
+        $model_name    = get_the_title($post_id) ?: __('3D Model', 'wp-3d-showcase');
+        $plugin_label  = sprintf(
+            /* translators: 1: plugin name, 2: plugin version */
+            __('%1$s v%2$s', 'wp-3d-showcase'),
+            'WP 3D Showcase',
+            WP3DS_VERSION
+        );
         $bg_color      = get_post_meta($post_id, '_wp3ds_bg_color', true) ?: '#f5f5f5';
         $auto_rotate   = get_post_meta($post_id, '_wp3ds_auto_rotate', true) === '1';
         $explode_step  = get_post_meta($post_id, '_wp3ds_explode_step', true) ?: '0.15';
@@ -82,8 +89,10 @@ class Shortcode
             </div>
 
             <div class="wp3ds-canvas-wrap">
+                <div class="wp3ds-model-name" aria-label="3D model name"><?php echo esc_html($model_name); ?></div>
                 <canvas></canvas>
                 <div class="wp3ds-loading">Loading 3D model…</div>
+                <div class="wp3ds-plugin-meta" aria-label="Plugin name and version"><?php echo esc_html($plugin_label); ?></div>
                 <div class="wp3ds-part-modal" data-part-modal hidden>
                     <button type="button" class="wp3ds-part-modal__close" data-action="close-part-modal" aria-label="Close part details">×</button>
                     <div class="wp3ds-part-modal__eyebrow">Part details</div>
