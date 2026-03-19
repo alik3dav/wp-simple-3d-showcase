@@ -194,8 +194,8 @@ class SettingsPage {
 		$attachment_id  = $this->get_hdri_map_attachment_id();
 		?>
 		<div class="wp3ds-admin-fields wp3ds-admin-media-field">
-			<input type="hidden" id="wp3ds_hdri_map_attachment_id" name="<?php echo esc_attr( self::OPTION_HDRI_MAP_ATTACHMENT_ID ); ?>" value="<?php echo esc_attr( (string) $attachment_id ); ?>">
-			<input type="url" id="wp3ds_hdri_map_url" value="<?php echo esc_attr( $value ); ?>" class="regular-text widefat" readonly>
+			<input type="hidden" id="wp3ds_hdri_map_attachment_id" value="<?php echo esc_attr( (string) $attachment_id ); ?>">
+			<input type="url" id="wp3ds_hdri_map_url" name="<?php echo esc_attr( self::OPTION_HDRI_MAP_ATTACHMENT_ID ); ?>" value="<?php echo esc_attr( $value ); ?>" class="regular-text widefat" data-media-url-input data-media-id-target="#wp3ds_hdri_map_attachment_id" placeholder="https://example.com/wp-content/uploads/your-map.hdr">
 			<p>
 				<button type="button" class="button" data-media-target="#wp3ds_hdri_map_url" data-media-id-target="#wp3ds_hdri_map_attachment_id" data-allowed-extension="hdr" data-media-title="<?php echo esc_attr__( 'Select HDRI Map', 'wp-3d-showcase' ); ?>" data-media-button="<?php echo esc_attr__( 'Use this HDRI map', 'wp-3d-showcase' ); ?>"><?php esc_html_e( 'Select HDRI', 'wp-3d-showcase' ); ?></button>
 				<button type="button" class="button-link-delete" data-clear-media="#wp3ds_hdri_map_url" data-clear-media-id="#wp3ds_hdri_map_attachment_id"><?php esc_html_e( 'Remove file', 'wp-3d-showcase' ); ?></button>

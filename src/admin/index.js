@@ -235,6 +235,18 @@ function isAllowedAttachment(attachment, allowedExtension) {
 }
 
 function initMediaPicker() {
+  document.addEventListener('input', (event) => {
+    const input = event.target.closest('[data-media-url-input]')
+    if (!input) {
+      return
+    }
+
+    const idInput = document.querySelector(input.dataset.mediaIdTarget || '')
+    if (idInput) {
+      idInput.value = ''
+    }
+  })
+
   document.addEventListener('click', (event) => {
     const clearButton = event.target.closest('[data-clear-media]')
     if (clearButton) {
@@ -252,6 +264,10 @@ function initMediaPicker() {
     const targetSelector = button.dataset.mediaTarget
     const input = document.querySelector(targetSelector)
     const idInput = document.querySelector(button.dataset.mediaIdTarget || '')
+
+    if (input && !input.dataset.mediaIdTarget && button.dataset.mediaIdTarget) {
+      input.dataset.mediaIdTarget = button.dataset.mediaIdTarget
+    }
 
     if (!targetSelector || !input) {
       return
