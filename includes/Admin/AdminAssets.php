@@ -46,6 +46,7 @@ class AdminAssets {
 			Helpers::get_asset_version( 'assets/dist/admin.js' ),
 			true
 		);
+		wp_script_add_data( 'wp3ds-admin', 'type', 'module' );
 
 		wp_localize_script(
 			'wp3ds-admin',

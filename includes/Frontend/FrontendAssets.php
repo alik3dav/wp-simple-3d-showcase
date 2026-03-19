@@ -31,6 +31,7 @@ class FrontendAssets {
 			Helpers::get_asset_version( 'assets/dist/frontend.js' ),
 			true
 		);
+		wp_script_add_data( 'wp3ds-frontend', 'type', 'module' );
 
 		wp_localize_script(
 			'wp3ds-frontend',
