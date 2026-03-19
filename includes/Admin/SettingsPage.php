@@ -256,7 +256,7 @@ class SettingsPage {
 	}
 
 	public function allow_custom_uploads( array $mimes ): array {
-		if ( ! current_user_can( 'upload_files' ) || ! $this->is_current_upload_for_custom_files() ) {
+		if ( ! current_user_can( 'upload_files' ) ) {
 			return $mimes;
 		}
 
@@ -356,34 +356,4 @@ class SettingsPage {
 		return $this->sanitize_unit_interval_setting( get_option( self::OPTION_ISOLATE_DIM_OPACITY, self::DEFAULT_ISOLATE_DIM_OPACITY ), self::DEFAULT_ISOLATE_DIM_OPACITY );
 	}
 
-	private function is_current_upload_for_custom_files(): bool {
-		$extensions = $this->get_uploaded_file_extensions( $_FILES ?? array() );
-
-		return in_array( self::HDR_EXTENSION, $extensions, true ) || in_array( self::GLB_EXTENSION, $extensions, true );
-	}
-
-	/**
-	 * @param array<string, mixed> $files Uploaded files array.
-	 * @return string[]
-	 */
-	private function get_uploaded_file_extensions( array $files ): array {
-		$extensions = array();
-
-		array_walk_recursive(
-			$files,
-			static function ( $value, $key ) use ( &$extensions ): void {
-				if ( 'name' !== $key || ! is_string( $value ) ) {
-					return;
-				}
-
-				$extension = strtolower( (string) pathinfo( $value, PATHINFO_EXTENSION ) );
-
-				if ( '' !== $extension ) {
-					$extensions[] = $extension;
-				}
-			}
-		);
-
-		return array_values( array_unique( $extensions ) );
-	}
 }
