@@ -11,6 +11,8 @@ class WP3DSViewer {
     this.root = root
     this.canvas = root.querySelector('canvas')
     this.loadingEl = root.querySelector('.wp3ds-loading')
+    this.startOverlayEl = root.querySelector('[data-start-overlay]')
+    this.startButtonEl = root.querySelector('[data-action="start-viewer"]')
     this.modelUrl = root.dataset.modelUrl
     this.bgColor = root.dataset.bgColor || '#f5f5f5'
     this.autoRotate = root.dataset.autoRotate === 'true'
@@ -37,6 +39,7 @@ class WP3DSViewer {
     this.pmremGenerator = null
     this.environmentMap = null
     this.animationFrameId = 0
+    this.hasStarted = false
 
     this.isolateMode = false
     this.selected = null
@@ -55,7 +58,14 @@ class WP3DSViewer {
     this.boundPointerMove = (event) => this.onPointerMove(event)
     this.boundDoubleClick = (event) => this.onDoubleClick(event)
 
-    this.init()
+    this.bindUI()
+    this.updateToolbarAvailability(false)
+    this.applyStartOverlayCopy()
+
+    if (!this.modelUrl) {
+      this.showLoading(frontendI18n.missingModel || 'No model file is assigned to this viewer.')
+      this.hideStartOverlay()
+    }
   }
 
   parseExplodeParts(rawValue) {
@@ -125,10 +135,13 @@ class WP3DSViewer {
   }
 
   init() {
-    if (!this.modelUrl) {
-      this.setLoadingText(frontendI18n.missingModel || 'No model file is assigned to this viewer.')
+    if (!this.modelUrl || this.hasStarted) {
       return
     }
+
+    this.hasStarted = true
+    this.showLoading(frontendI18n.loadingLabel || 'Loading 3D model…')
+    this.hideStartOverlay()
 
     const wrap = this.root.querySelector('.wp3ds-canvas-wrap')
     const width = this.root.clientWidth || 800
@@ -167,7 +180,6 @@ class WP3DSViewer {
 
     this.loadEnvironmentMap()
     this.loadModel()
-    this.bindUI()
     this.bindEvents()
     this.animate()
   }
@@ -176,6 +188,46 @@ class WP3DSViewer {
     if (this.loadingEl) {
       this.loadingEl.textContent = message
     }
+  }
+
+  showLoading(message) {
+    this.setLoadingText(message)
+    if (this.loadingEl) {
+      this.loadingEl.hidden = false
+      this.loadingEl.style.display = 'grid'
+    }
+  }
+
+  hideLoading() {
+    if (this.loadingEl) {
+      this.loadingEl.hidden = true
+      this.loadingEl.style.display = 'none'
+    }
+  }
+
+  hideStartOverlay() {
+    if (this.startOverlayEl) {
+      this.startOverlayEl.hidden = true
+    }
+  }
+
+  applyStartOverlayCopy() {
+    const labelEl = this.startButtonEl?.querySelector('.wp3ds-start-button__label')
+    const hintEl = this.startOverlayEl?.querySelector('.wp3ds-start-hint')
+
+    if (labelEl) {
+      labelEl.textContent = frontendI18n.startLabel || labelEl.textContent
+    }
+
+    if (hintEl) {
+      hintEl.textContent = frontendI18n.startDescription || hintEl.textContent
+    }
+  }
+
+  updateToolbarAvailability(enabled) {
+    this.root.querySelectorAll('.wp3ds-toolbar button').forEach((button) => {
+      button.disabled = !enabled
+    })
   }
 
   loadEnvironmentMap() {
@@ -209,6 +261,7 @@ class WP3DSViewer {
         this.collectParts()
         this.centerAndFitModel()
         this.calculateExplodeTargets()
+        this.updateToolbarAvailability(true)
         this.hideLoading()
       },
       (progress) => {
@@ -622,6 +675,15 @@ class WP3DSViewer {
     })
   }
 
+  toggleAutoRotate() {
+    if (!this.controls) {
+      return
+    }
+
+    this.controls.autoRotate = !this.controls.autoRotate
+    this.updateButtonState('autorotate', this.controls.autoRotate)
+  }
+
   updateButtonState(action, active) {
     const button = this.root.querySelector(`[data-action="${action}"]`)
     if (!button) {
@@ -641,12 +703,10 @@ class WP3DSViewer {
   }
 
   bindUI() {
+    this.startButtonEl?.addEventListener('click', () => this.init())
     this.root.querySelector('[data-action="isolate"]')?.addEventListener('click', () => this.toggleIsolateMode())
     this.root.querySelector('[data-action="reset"]')?.addEventListener('click', () => this.resetView())
-    this.root.querySelector('[data-action="autorotate"]')?.addEventListener('click', () => {
-      this.controls.autoRotate = !this.controls.autoRotate
-      this.updateButtonState('autorotate', this.controls.autoRotate)
-    })
+    this.root.querySelector('[data-action="autorotate"]')?.addEventListener('click', () => this.toggleAutoRotate())
     this.root.querySelector('[data-action="explode"]')?.addEventListener('click', () => this.explode())
     this.root.querySelector('[data-action="fullscreen"]')?.addEventListener('click', () => this.toggleFullscreen())
     this.root.querySelector('[data-action="close-part-modal"]')?.addEventListener('click', () => {
@@ -655,7 +715,7 @@ class WP3DSViewer {
       this.applyIsolationState()
     })
 
-    this.updateButtonState('autorotate', this.controls.autoRotate)
+    this.updateButtonState('autorotate', this.autoRotate)
     this.updateButtonState('explode', this.isExploded)
     this.updateButtonState('isolate', this.isolateMode)
   }
@@ -676,12 +736,6 @@ class WP3DSViewer {
     this.camera.aspect = width / height
     this.camera.updateProjectionMatrix()
     this.renderer.setSize(width, height)
-  }
-
-  hideLoading() {
-    if (this.loadingEl) {
-      this.loadingEl.style.display = 'none'
-    }
   }
 
   animate() {
