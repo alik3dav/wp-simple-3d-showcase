@@ -6,7 +6,8 @@
   "license": "GPL-2.0-or-later",
   "scripts": {
     "build": "vite build",
-    "package-plugin": "rm -rf dist && mkdir -p dist/3d-model-viewer && git ls-files | while read -r f; do case \"$f\" in node_modules/*|dist/*|.gitignore|scripts/*) continue ;; esac; mkdir -p \"dist/3d-model-viewer/$(dirname \"$f\")\"; cp -R \"$f\" \"dist/3d-model-viewer/$f\"; done && (cd dist && zip -qr 3d-model-viewer.zip 3d-model-viewer)"
+    "stage-plugin": "./scripts/stage-plugin.sh",
+    "package-plugin": "rm -rf dist && ./scripts/stage-plugin.sh && (cd dist && zip -qr 3d-model-viewer.zip 3d-model-viewer)"
   },
   "devDependencies": {
     "vite": "^5.4.19"
