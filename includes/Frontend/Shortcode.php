@@ -32,7 +32,7 @@ class Shortcode {
 		$post_id = $this->resolve_post_id( $atts );
 
 		if ( ! $post_id || ShowcasePostType::POST_TYPE !== get_post_type( $post_id ) ) {
-			return '<p>' . esc_html__( 'Invalid 3D item.', 'three-d-showcase' ) . '</p>';
+			return '<p>' . esc_html__( 'Invalid 3D item.', '3D-Model-Viewer' ) . '</p>';
 		}
 
 		if ( 'publish' !== get_post_status( $post_id ) && ! current_user_can( 'read_post', $post_id ) ) {
@@ -47,7 +47,7 @@ class Shortcode {
 		}
 
 		if ( '' === $model_url ) {
-			return '<p>' . esc_html__( 'No GLB file is assigned to this 3D item.', 'three-d-showcase' ) . '</p>';
+			return '<p>' . esc_html__( 'No GLB file is assigned to this 3D item.', '3D-Model-Viewer' ) . '</p>';
 		}
 
 		$settings_page         = new SettingsPage();
@@ -55,10 +55,10 @@ class Shortcode {
 		$context               = array(
 			'height'                  => Helpers::sanitize_dimension( $atts['height'] ),
 			'model_url'               => $model_url,
-			'model_name'              => get_the_title( $post_id ) ?: __( '3D Model', 'three-d-showcase' ),
+			'model_name'              => get_the_title( $post_id ) ?: __( '3D Model', '3D-Model-Viewer' ),
 			'plugin_label'            => sprintf(
 				/* translators: 1: plugin name, 2: plugin version */
-				__( '%1$s v%2$s', 'three-d-showcase' ),
+				__( '%1$s v%2$s', '3D-Model-Viewer' ),
 				'3D Model Viewer',
 				WP3DS_VERSION
 			),
@@ -68,29 +68,29 @@ class Shortcode {
 			'explode_parts'           => wp_json_encode( Helpers::normalize_explode_parts( get_post_meta( $post_id, '_wp3ds_explode_parts', true ) ) ) ?: '[]',
 			'hdri_map_url'            => $settings_page->get_hdri_map_url(),
 			'interaction_settings'    => $interaction_settings,
-			'controls_aria_label'     => __( '3D viewer controls', 'three-d-showcase' ),
-			'reset_label'             => __( 'Reset', 'three-d-showcase' ),
-			'rotate_label'            => __( 'Rotate', 'three-d-showcase' ),
-			'explode_label'           => __( 'Explode', 'three-d-showcase' ),
-			'focus_label'             => __( 'Focus', 'three-d-showcase' ),
-			'fullscreen_label'        => __( 'Full', 'three-d-showcase' ),
-			'reset_aria_label'        => __( 'Reset view', 'three-d-showcase' ),
-			'rotate_aria_label'       => __( 'Toggle auto rotation', 'three-d-showcase' ),
-			'explode_aria_label'      => __( 'Toggle explode view', 'three-d-showcase' ),
-			'focus_aria_label'        => __( 'Toggle focus mode', 'three-d-showcase' ),
-			'fullscreen_aria_label'   => __( 'Toggle fullscreen', 'three-d-showcase' ),
-			'model_name_aria_label'   => __( '3D model name', 'three-d-showcase' ),
-			'plugin_meta_aria_label'  => __( 'Plugin name and version', 'three-d-showcase' ),
-			'start_label'             => __( 'Load 3D model', 'three-d-showcase' ),
-			'start_description'       => __( 'Click to start loading this 3D item only when you are ready.', 'three-d-showcase' ),
-			'start_aria_label'        => __( 'Start loading the 3D model', 'three-d-showcase' ),
-			'loading_label'           => __( 'Loading 3D model…', 'three-d-showcase' ),
-			'part_details_eyebrow'    => __( 'Part details', 'three-d-showcase' ),
-			'select_part_label'       => __( 'Select a part', 'three-d-showcase' ),
-			'part_details_description'=> __( 'Double-click any object in the model to open its details.', 'three-d-showcase' ),
-			'characteristics_label'   => __( 'Characteristics', 'three-d-showcase' ),
-			'mesh_key_label'          => __( 'Mesh key', 'three-d-showcase' ),
-			'close_aria_label'        => __( 'Close part details', 'three-d-showcase' ),
+			'controls_aria_label'     => __( '3D viewer controls', '3D-Model-Viewer' ),
+			'reset_label'             => __( 'Reset', '3D-Model-Viewer' ),
+			'rotate_label'            => __( 'Rotate', '3D-Model-Viewer' ),
+			'explode_label'           => __( 'Explode', '3D-Model-Viewer' ),
+			'focus_label'             => __( 'Focus', '3D-Model-Viewer' ),
+			'fullscreen_label'        => __( 'Full', '3D-Model-Viewer' ),
+			'reset_aria_label'        => __( 'Reset view', '3D-Model-Viewer' ),
+			'rotate_aria_label'       => __( 'Toggle auto rotation', '3D-Model-Viewer' ),
+			'explode_aria_label'      => __( 'Toggle explode view', '3D-Model-Viewer' ),
+			'focus_aria_label'        => __( 'Toggle focus mode', '3D-Model-Viewer' ),
+			'fullscreen_aria_label'   => __( 'Toggle fullscreen', '3D-Model-Viewer' ),
+			'model_name_aria_label'   => __( '3D model name', '3D-Model-Viewer' ),
+			'plugin_meta_aria_label'  => __( 'Plugin name and version', '3D-Model-Viewer' ),
+			'start_label'             => __( 'Load 3D model', '3D-Model-Viewer' ),
+			'start_description'       => __( 'Click to start loading this 3D item only when you are ready.', '3D-Model-Viewer' ),
+			'start_aria_label'        => __( 'Start loading the 3D model', '3D-Model-Viewer' ),
+			'loading_label'           => __( 'Loading 3D model…', '3D-Model-Viewer' ),
+			'part_details_eyebrow'    => __( 'Part details', '3D-Model-Viewer' ),
+			'select_part_label'       => __( 'Select a part', '3D-Model-Viewer' ),
+			'part_details_description'=> __( 'Double-click any object in the model to open its details.', '3D-Model-Viewer' ),
+			'characteristics_label'   => __( 'Characteristics', '3D-Model-Viewer' ),
+			'mesh_key_label'          => __( 'Mesh key', '3D-Model-Viewer' ),
+			'close_aria_label'        => __( 'Close part details', '3D-Model-Viewer' ),
 		);
 
 		wp_enqueue_style( 'wp3ds-frontend' );
