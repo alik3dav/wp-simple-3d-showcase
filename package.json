@@ -1,12 +1,12 @@
 {
-  "name": "3D-Model-Viewer",
+  "name": "3d-model-viewer",
   "version": "1.1.0",
   "private": true,
   "description": "Build pipeline for the 3D Model Viewer WordPress plugin.",
   "license": "GPL-2.0-or-later",
   "scripts": {
     "build": "vite build",
-    "package-plugin": "rm -rf dist && mkdir -p dist/3D-Model-Viewer && git ls-files | while read -r f; do case \"$f\" in node_modules/*|dist/*|.gitignore|scripts/*) continue ;; esac; mkdir -p \"dist/3D-Model-Viewer/$(dirname \"$f\")\"; cp -R \"$f\" \"dist/3D-Model-Viewer/$f\"; done && (cd dist && zip -qr 3D-Model-Viewer.zip 3D-Model-Viewer)"
+    "package-plugin": "rm -rf dist && mkdir -p dist/3d-model-viewer && git ls-files | while read -r f; do case \"$f\" in node_modules/*|dist/*|.gitignore|scripts/*) continue ;; esac; mkdir -p \"dist/3d-model-viewer/$(dirname \"$f\")\"; cp -R \"$f\" \"dist/3d-model-viewer/$f\"; done && (cd dist && zip -qr 3d-model-viewer.zip 3d-model-viewer)"
   },
   "devDependencies": {
     "vite": "^5.4.19"

@@ -49,7 +49,7 @@ class Routes {
 		$post_id = absint( $request['id'] );
 
 		if ( ShowcasePostType::POST_TYPE !== get_post_type( $post_id ) ) {
-			return new \WP_REST_Response( array( 'message' => __( 'Item not found.', '3D-Model-Viewer' ) ), 404 );
+			return new \WP_REST_Response( array( 'message' => __( 'Item not found.', '3d-model-viewer' ) ), 404 );
 		}
 
 		$settings_page      = new SettingsPage();

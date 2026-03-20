@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<ruleset name="3D Model Viewer">
+	<description>Project PHPCS rules for the 3D Model Viewer plugin.</description>
+
+	<file>3d-model-viewer.php</file>
+	<file>includes</file>
+	<file>templates</file>
+	<file>uninstall.php</file>
+
+	<exclude-pattern>*/node_modules/*</exclude-pattern>
+	<exclude-pattern>*/assets/dist/*</exclude-pattern>
+	<exclude-pattern>*/dist/*</exclude-pattern>
+
+	<rule ref="WordPress.WP.I18n">
+		<properties>
+			<property name="text_domain" type="array">
+				<element value="3d-model-viewer"/>
+			</property>
+		</properties>
+	</rule>
+</ruleset>

@@ -14,7 +14,7 @@ Show self-hosted GLB models with orbit controls, explode view, fullscreen mode, 
 
 3D Model Viewer lets you publish interactive GLB viewers without relying on remote runtime dependencies. The plugin bundles its JavaScript locally, uses WordPress media attachments for GLB files, supports external HDRI map URLs, and provides a shortcode-first workflow that is ready for WordPress.org review.
 
-For WordPress.org packaging, build the distributable so the plugin folder slug is `3D-Model-Viewer` rather than any temporary repository or branch name.
+For WordPress.org packaging, build the distributable so the plugin folder slug is `3d-model-viewer` rather than any temporary repository or branch name.
 
 Features include:
 

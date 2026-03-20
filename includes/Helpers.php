@@ -128,7 +128,7 @@ class Helpers {
 
 			$sanitized[] = array(
 				'key'             => sanitize_text_field( (string) $part['key'] ),
-				'name'            => sanitize_text_field( (string) ( $part['name'] ?? __( 'Part', '3D-Model-Viewer' ) ) ),
+				'name'            => sanitize_text_field( (string) ( $part['name'] ?? __( 'Part', '3d-model-viewer' ) ) ),
 				'description'     => sanitize_textarea_field( (string) ( $part['description'] ?? '' ) ),
 				'characteristics' => sanitize_textarea_field( (string) ( $part['characteristics'] ?? '' ) ),
 				'x'               => round( (float) ( $part['x'] ?? 0 ), 4 ),

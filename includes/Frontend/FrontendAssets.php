@@ -38,11 +38,11 @@ class FrontendAssets {
 			'wp3dsFrontendConfig',
 			array(
 				'i18n' => array(
-					'missingModel'     => __( 'No model file is assigned to this viewer.', '3D-Model-Viewer' ),
-					'failedModel'      => __( 'Failed to load the selected 3D model.', '3D-Model-Viewer' ),
-					'loadingLabel'     => __( 'Loading 3D model…', '3D-Model-Viewer' ),
-					'startLabel'       => __( 'Load 3D model', '3D-Model-Viewer' ),
-					'startDescription' => __( 'Click to start loading this 3D item only when you are ready.', '3D-Model-Viewer' ),
+					'missingModel'     => __( 'No model file is assigned to this viewer.', '3d-model-viewer' ),
+					'failedModel'      => __( 'Failed to load the selected 3D model.', '3d-model-viewer' ),
+					'loadingLabel'     => __( 'Loading 3D model…', '3d-model-viewer' ),
+					'startLabel'       => __( 'Load 3D model', '3d-model-viewer' ),
+					'startDescription' => __( 'Click to start loading this 3D item only when you are ready.', '3d-model-viewer' ),
 				),
 			)
 		);
