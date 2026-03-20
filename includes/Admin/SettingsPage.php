@@ -35,8 +35,8 @@ class SettingsPage {
 
 	public function register_menu(): void {
 		add_options_page(
-			__( '3D Showcase Settings', 'three-d-showcase' ),
-			__( '3D Showcase', 'three-d-showcase' ),
+			__( '3D Model Viewer Settings', 'three-d-showcase' ),
+			__( '3D Model Viewer', 'three-d-showcase' ),
 			'manage_options',
 			'wp3ds-settings',
 			array( $this, 'render_page' )
@@ -259,7 +259,7 @@ class SettingsPage {
 		}
 		?>
 		<div class="wrap">
-			<h1><?php esc_html_e( '3D Showcase Settings', 'three-d-showcase' ); ?></h1>
+			<h1><?php esc_html_e( '3D Model Viewer Settings', 'three-d-showcase' ); ?></h1>
 			<?php settings_errors( 'wp3ds_settings' ); ?>
 			<form action="options.php" method="post">
 				<?php
