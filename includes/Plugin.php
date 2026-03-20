@@ -19,7 +19,6 @@ defined( 'ABSPATH' ) || exit;
 
 class Plugin {
 	public function boot(): void {
-		add_action( 'init', array( $this, 'load_textdomain' ) );
 		add_action( 'init', array( new ShowcasePostType(), 'register' ) );
 		add_action( 'init', array( new Shortcode(), 'register' ) );
 		add_action( 'add_meta_boxes', array( new MetaBoxes(), 'register' ) );
@@ -33,11 +32,6 @@ class Plugin {
 
 		add_action( 'rest_api_init', array( new Routes(), 'register' ) );
 	}
-
-	public function load_textdomain(): void {
-		load_plugin_textdomain( WP3DS_TEXT_DOMAIN, false, dirname( plugin_basename( WP3DS_FILE ) ) . '/languages' );
-	}
-
 	public static function activate(): void {
 		( new ShowcasePostType() )->register();
 		flush_rewrite_rules();
