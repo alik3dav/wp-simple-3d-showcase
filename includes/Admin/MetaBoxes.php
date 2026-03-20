@@ -41,12 +41,24 @@ class MetaBoxes {
 			$model_url = $this->get_legacy_local_model_url( $post->ID );
 		}
 
-		$bg_color      = get_post_meta( $post->ID, self::META_BG_COLOR, true ) ?: '#f5f5f5';
-		$auto_rotate   = get_post_meta( $post->ID, self::META_AUTO_ROTATE, true );
-		$explode_step  = get_post_meta( $post->ID, self::META_EXPLODE_STEP, true ) ?: '0.15';
-		$explode_parts = wp_json_encode( Helpers::normalize_explode_parts( get_post_meta( $post->ID, self::META_EXPLODE_PARTS, true ) ) );
+		$bg_color          = get_post_meta( $post->ID, self::META_BG_COLOR, true ) ?: '#f5f5f5';
+		$auto_rotate       = get_post_meta( $post->ID, self::META_AUTO_ROTATE, true );
+		$explode_step      = get_post_meta( $post->ID, self::META_EXPLODE_STEP, true ) ?: '0.15';
+		$explode_parts     = wp_json_encode( Helpers::normalize_explode_parts( get_post_meta( $post->ID, self::META_EXPLODE_PARTS, true ) ) );
+		$shortcode_by_id   = sprintf( '[wp3ds_viewer id="%d"]', $post->ID );
+		$shortcode_by_slug = '' !== $post->post_name ? sprintf( '[wp3ds_viewer slug="%s"]', $post->post_name ) : '';
 		?>
 		<div class="wp3ds-admin-fields">
+			<div class="notice notice-info inline">
+				<p><strong><?php esc_html_e( 'How to embed this 3D item', 'three-d-showcase' ); ?></strong></p>
+				<p><?php esc_html_e( 'Paste one of these shortcodes into any post, page, or widget that supports shortcodes.', 'three-d-showcase' ); ?></p>
+				<p><code><?php echo esc_html( $shortcode_by_id ); ?></code></p>
+				<?php if ( '' !== $shortcode_by_slug ) : ?>
+					<p><code><?php echo esc_html( $shortcode_by_slug ); ?></code></p>
+				<?php else : ?>
+					<p class="description"><?php esc_html_e( 'Save or publish this item to generate a slug-based shortcode too.', 'three-d-showcase' ); ?></p>
+				<?php endif; ?>
+			</div>
 			<p>
 				<label for="wp3ds_model_url"><strong><?php esc_html_e( 'GLB File', 'three-d-showcase' ); ?></strong></label><br>
 				<input type="hidden" id="wp3ds_model_attachment_id" name="wp3ds_model_attachment_id" value="<?php echo esc_attr( (string) $model_attachment_id ); ?>">

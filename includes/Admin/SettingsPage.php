@@ -95,6 +95,13 @@ class SettingsPage {
 		);
 
 		add_settings_section(
+			'wp3ds_shortcode_usage_section',
+			__( 'Using the Shortcode', 'three-d-showcase' ),
+			array( $this, 'render_shortcode_usage_section' ),
+			'wp3ds-settings'
+		);
+
+		add_settings_section(
 			'wp3ds_environment_section',
 			__( 'Environment Lighting', 'three-d-showcase' ),
 			static function (): void {
@@ -187,6 +194,16 @@ class SettingsPage {
 
 	public function sanitize_isolate_dim_opacity( $value ): float {
 		return $this->sanitize_unit_interval_setting( $value, self::DEFAULT_ISOLATE_DIM_OPACITY );
+	}
+
+	public function render_shortcode_usage_section(): void {
+		?>
+		<p><?php esc_html_e( 'After you publish a 3D item, embed it in any post or page with the shortcode below.', 'three-d-showcase' ); ?></p>
+		<p><code>[wp3ds_viewer id="123"]</code></p>
+		<p><?php esc_html_e( 'You can also target an item by its slug if you prefer a portable shortcode.', 'three-d-showcase' ); ?></p>
+		<p><code>[wp3ds_viewer slug="example-item"]</code></p>
+		<p><?php esc_html_e( 'The item editor also shows a ready-to-copy shortcode for the current 3D item.', 'three-d-showcase' ); ?></p>
+		<?php
 	}
 
 	public function render_hdri_field(): void {
