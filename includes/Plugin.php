@@ -19,7 +19,6 @@ defined( 'ABSPATH' ) || exit;
 
 class Plugin {
 	public function boot(): void {
-		add_action( 'plugins_loaded', array( $this, 'load_textdomain' ) );
 		add_action( 'init', array( new ShowcasePostType(), 'register' ) );
 		add_action( 'init', array( new Shortcode(), 'register' ) );
 		add_action( 'add_meta_boxes', array( new MetaBoxes(), 'register' ) );
@@ -41,9 +40,5 @@ class Plugin {
 
 	public static function deactivate(): void {
 		flush_rewrite_rules();
-	}
-
-	public function load_textdomain(): void {
-		load_plugin_textdomain( 'three-d-showcase', false, dirname( plugin_basename( WP3DS_FILE ) ) . '/languages' );
 	}
 }

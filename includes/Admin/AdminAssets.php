@@ -15,7 +15,6 @@ defined( 'ABSPATH' ) || exit;
 class AdminAssets {
 	public function hooks(): void {
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue' ) );
-		add_filter( 'script_loader_tag', array( $this, 'mark_as_module' ), 10, 3 );
 	}
 
 	public function enqueue( string $hook ): void {
@@ -47,6 +46,7 @@ class AdminAssets {
 			Helpers::get_asset_version( 'assets/dist/admin.js' ),
 			true
 		);
+		wp_script_add_data( 'wp3ds-admin', 'type', 'module' );
 
 		wp_localize_script(
 			'wp3ds-admin',
@@ -58,6 +58,7 @@ class AdminAssets {
 					'invalidFileType'    => __( 'Please select a file with the required extension.', 'three-d-showcase' ),
 					'noPartsDetected'    => __( 'No mesh parts were detected in this GLB file.', 'three-d-showcase' ),
 					'detectingParts'     => __( 'Detecting mesh parts from the GLB file…', 'three-d-showcase' ),
+					/* translators: %d: number of detected mesh parts. */
 					'partsDetected'      => __( 'Detected %d parts automatically.', 'three-d-showcase' ),
 					'selectGlbPrompt'    => __( 'Select a GLB file to detect model parts.', 'three-d-showcase' ),
 					'loadGlbError'       => __( 'Unable to inspect the selected GLB file.', 'three-d-showcase' ),
@@ -72,18 +73,6 @@ class AdminAssets {
 					'shortSummary'       => __( 'Short summary shown in the viewer', 'three-d-showcase' ),
 				),
 			)
-		);
-	}
-
-	public function mark_as_module( string $tag, string $handle, string $src ): string {
-		if ( 'wp3ds-admin' !== $handle ) {
-			return $tag;
-		}
-
-		return sprintf(
-			'<script type="module" src="%1$s" id="%2$s-js"></script>',
-			esc_url( $src ),
-			esc_attr( $handle )
 		);
 	}
 }

@@ -6,7 +6,7 @@
   "license": "GPL-2.0-or-later",
   "scripts": {
     "build": "vite build",
-    "package-plugin": "bash scripts/package-plugin.sh"
+    "package-plugin": "rm -rf dist && mkdir -p dist/three-d-showcase && git ls-files | while read -r f; do case \"$f\" in node_modules/*|dist/*|.gitignore|scripts/*) continue ;; esac; mkdir -p \"dist/three-d-showcase/$(dirname \"$f\")\"; cp -R \"$f\" \"dist/three-d-showcase/$f\"; done && (cd dist && zip -qr three-d-showcase.zip three-d-showcase)"
   },
   "devDependencies": {
     "vite": "^5.4.19"

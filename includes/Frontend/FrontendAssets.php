@@ -14,7 +14,6 @@ defined( 'ABSPATH' ) || exit;
 class FrontendAssets {
 	public function hooks(): void {
 		add_action( 'wp_enqueue_scripts', array( $this, 'register' ) );
-		add_filter( 'script_loader_tag', array( $this, 'mark_as_module' ), 10, 3 );
 	}
 
 	public function register(): void {
@@ -32,6 +31,7 @@ class FrontendAssets {
 			Helpers::get_asset_version( 'assets/dist/frontend.js' ),
 			true
 		);
+		wp_script_add_data( 'wp3ds-frontend', 'type', 'module' );
 
 		wp_localize_script(
 			'wp3ds-frontend',
@@ -45,18 +45,6 @@ class FrontendAssets {
 					'startDescription' => __( 'Click to start loading this 3D item only when you are ready.', 'three-d-showcase' ),
 				),
 			)
-		);
-	}
-
-	public function mark_as_module( string $tag, string $handle, string $src ): string {
-		if ( 'wp3ds-frontend' !== $handle ) {
-			return $tag;
-		}
-
-		return sprintf(
-			'<script type="module" src="%1$s" id="%2$s-js"></script>',
-			esc_url( $src ),
-			esc_attr( $handle )
 		);
 	}
 }

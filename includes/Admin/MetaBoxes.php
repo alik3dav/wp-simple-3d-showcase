@@ -117,12 +117,12 @@ class MetaBoxes {
 			return;
 		}
 
-		$model_attachment_id = isset( $_POST['wp3ds_model_attachment_id'] ) ? Helpers::resolve_local_attachment_id( wp_unslash( $_POST['wp3ds_model_attachment_id'] ), 'glb' ) : 0;
+		$model_attachment_id = isset( $_POST['wp3ds_model_attachment_id'] ) ? Helpers::resolve_local_attachment_id( sanitize_text_field( wp_unslash( $_POST['wp3ds_model_attachment_id'] ) ), 'glb' ) : 0;
 		$model_url           = Helpers::get_attachment_url( $model_attachment_id, 'glb' );
 		$bg_color            = isset( $_POST['wp3ds_bg_color'] ) ? sanitize_hex_color( wp_unslash( $_POST['wp3ds_bg_color'] ) ) : '#f5f5f5';
-		$explode_step        = isset( $_POST['wp3ds_explode_step'] ) ? max( 0, min( 5, (float) wp_unslash( $_POST['wp3ds_explode_step'] ) ) ) : 0.15;
+		$explode_step        = isset( $_POST['wp3ds_explode_step'] ) ? max( 0, min( 5, (float) sanitize_text_field( wp_unslash( $_POST['wp3ds_explode_step'] ) ) ) ) : 0.15;
 		$auto_rotate         = isset( $_POST['wp3ds_auto_rotate'] ) ? '1' : '0';
-		$explode_parts       = isset( $_POST['wp3ds_explode_parts'] ) ? wp_json_encode( Helpers::normalize_explode_parts( wp_unslash( $_POST['wp3ds_explode_parts'] ) ) ) : '[]';
+		$explode_parts       = isset( $_POST['wp3ds_explode_parts'] ) ? wp_json_encode( Helpers::normalize_explode_parts( sanitize_textarea_field( wp_unslash( $_POST['wp3ds_explode_parts'] ) ) ) ) : '[]';
 
 		update_post_meta( $post_id, self::META_MODEL_ATTACHMENT_ID, $model_attachment_id );
 		update_post_meta( $post_id, self::META_MODEL_URL, $model_url );
