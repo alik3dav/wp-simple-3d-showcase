@@ -14,8 +14,8 @@ class ShowcasePostType {
 
 	public function register(): void {
 		$labels = array(
-			'name'                  => __( '3D Model Viewer Items', '3d-model-viewer' ),
-			'singular_name'         => __( '3D Model Viewer Item', '3d-model-viewer' ),
+			'name'                  => __( '3d-model-viewer Items', '3d-model-viewer' ),
+			'singular_name'         => __( '3d-model-viewer Item', '3d-model-viewer' ),
 			'add_new'               => __( 'Add New', '3d-model-viewer' ),
 			'add_new_item'          => __( 'Add New 3D Item', '3d-model-viewer' ),
 			'edit_item'             => __( 'Edit 3D Item', '3d-model-viewer' ),
@@ -30,7 +30,7 @@ class ShowcasePostType {
 			'attributes'            => __( '3D Item Attributes', '3d-model-viewer' ),
 			'insert_into_item'      => __( 'Insert into 3D item', '3d-model-viewer' ),
 			'uploaded_to_this_item' => __( 'Uploaded to this 3D item', '3d-model-viewer' ),
-			'menu_name'             => __( '3D Model Viewer', '3d-model-viewer' ),
+			'menu_name'             => __( '3d-model-viewer', '3d-model-viewer' ),
 		);
 
 		register_post_type(

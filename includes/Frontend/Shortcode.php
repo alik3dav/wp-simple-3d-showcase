@@ -59,7 +59,7 @@ class Shortcode {
 			'plugin_label'            => sprintf(
 				/* translators: 1: plugin name, 2: plugin version */
 				__( '%1$s v%2$s', '3d-model-viewer' ),
-				'3D Model Viewer',
+				'3d-model-viewer',
 				WP3DS_VERSION
 			),
 			'bg_color'                => sanitize_hex_color( (string) get_post_meta( $post_id, '_wp3ds_bg_color', true ) ) ?: '#f5f5f5',

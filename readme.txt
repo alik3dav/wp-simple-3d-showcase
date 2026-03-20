@@ -1,4 +1,4 @@
-=== 3D Model Viewer ===
+=== 3d-model-viewer ===
 Contributors: your-wporg-username
 Tags: 3d, glb, viewer, threejs, product-showcase
 Requires at least: 6.4
@@ -12,9 +12,9 @@ Show self-hosted GLB models with orbit controls, explode view, fullscreen mode, 
 
 == Description ==
 
-3D Model Viewer lets you publish interactive GLB viewers without relying on remote runtime dependencies. The plugin bundles its JavaScript locally, uses WordPress media attachments for GLB files, supports external HDRI map URLs, and provides a shortcode-first workflow that is ready for WordPress.org review.
+3d-model-viewer lets you publish interactive GLB viewers without relying on remote runtime dependencies. The plugin bundles its JavaScript locally, uses WordPress media attachments for GLB files, supports external HDRI map URLs, and provides a shortcode-first workflow that is ready for WordPress.org review.
 
-For WordPress.org packaging and local validation, always stage the plugin into a folder named `3d-model-viewer` rather than any temporary repository or branch name. Local folders with spaces or mixed case (for example `3D Model Viewer`) can trigger false-positive text domain mismatch warnings in Plugin Check. Run `npm run stage-plugin` to create `dist/3d-model-viewer/` before validating, or `npm run package-plugin` to build the distributable zip with the correct slug.
+For WordPress.org packaging and local validation, always stage the plugin into a folder named `3d-model-viewer` rather than any temporary repository or branch name. Local folders with spaces or mixed case (for example `3d-model-viewer`) can trigger false-positive text domain mismatch warnings in Plugin Check. Run `npm run stage-plugin` to create `dist/3d-model-viewer/` before validating, or `npm run package-plugin` to build the distributable zip with the correct slug.
 
 Features include:
 
@@ -28,10 +28,10 @@ Features include:
 == Installation ==
 
 1. Upload the plugin folder to `/wp-content/plugins/` or install it through **Plugins > Add New**.
-2. Activate **3D Model Viewer**.
+2. Activate **3d-model-viewer**.
 3. Upload your `.glb` file to the WordPress Media Library.
-4. Add an external direct `.hdr` URL in **Settings > 3D Model Viewer** if you want environment lighting.
-5. Create a new **3D Model Viewer** item and select a GLB file in the **3D Model Settings** metabox.
+4. Add an external direct `.hdr` URL in **Settings > 3d-model-viewer** if you want environment lighting.
+5. Create a new **3d-model-viewer** item and select a GLB file in the **3D Model Settings** metabox.
 6. Insert the shortcode `[wp3ds_viewer id="123"]` or `[wp3ds_viewer slug="example-item"]` into any post or page.
 
 == Frequently Asked Questions ==
@@ -51,7 +51,7 @@ Not yet. The current release is shortcode-first, but the codebase is organized s
 == Screenshots ==
 
 1. Front-end 3D viewer with toolbar controls and part details card.
-2. 3D Model Viewer editor metabox with GLB selection and explode-part configuration.
+2. 3d-model-viewer editor metabox with GLB selection and explode-part configuration.
 3. Settings screen for HDRI lighting and interaction colors.
 
 == Changelog ==

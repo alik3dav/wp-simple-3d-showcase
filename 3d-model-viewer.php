@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name: 3D Model Viewer
+ * Plugin Name: 3d-model-viewer
  * Description: View self-hosted GLB 3D models with orbit controls, fullscreen mode, explode view, and part inspection.
  * Version: 1.1.0
  * Author: Palaplast
