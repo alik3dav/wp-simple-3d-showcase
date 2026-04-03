@@ -14,6 +14,7 @@ defined( 'ABSPATH' ) || exit;
 class FrontendAssets {
 	public function hooks(): void {
 		add_action( 'wp_enqueue_scripts', array( $this, 'register' ) );
+		add_filter( 'script_loader_tag', array( $this, 'set_module_script_type' ), 10, 3 );
 	}
 
 	public function register(): void {
@@ -45,6 +46,26 @@ class FrontendAssets {
 					'startDescription' => __( 'Click to start loading this 3D item only when you are ready.', '3d-model-viewer' ),
 				),
 			)
+		);
+	}
+
+	/**
+	 * Ensure the frontend bundle is always loaded as an ES module.
+	 *
+	 * @param string $tag    Script tag HTML.
+	 * @param string $handle Script handle.
+	 * @param string $src    Script source URL.
+	 * @return string
+	 */
+	public function set_module_script_type( string $tag, string $handle, string $src ): string {
+		if ( 'wp3ds-frontend' !== $handle ) {
+			return $tag;
+		}
+
+		return sprintf(
+			'<script type="module" src="%s" id="%s-js"></script>' . "\n",
+			esc_url( $src ),
+			esc_attr( $handle )
 		);
 	}
 }
